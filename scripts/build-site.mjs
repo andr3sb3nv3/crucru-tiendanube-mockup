@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const ASSET_VERSION = "20260702-ppt-links";
+const ASSET_VERSION = "20260702-dock-toggle";
 const SITE_BASE_PATH = normalizeBasePath(process.env.SITE_BASE_PATH || "");
 const data = JSON.parse(await readFile(path.join(ROOT, "data", "products.json"), "utf8"));
 const products = data.products;
@@ -127,6 +127,7 @@ function pageShell({ title, description, body, extraScript = "" }) {
       </div>
     </section>
     <div class="floating-dock" aria-label="Acciones de presentación">
+      <button class="dock-toggle" type="button" aria-label="Minimizar acciones" aria-expanded="true" data-dock-toggle>−</button>
       <div class="variant-actions" aria-label="Variantes visuales">
         <button type="button" data-design-option="one">Opción 1</button>
         <button type="button" data-design-option="two">Opción 2</button>
@@ -155,6 +156,22 @@ function pageShell({ title, description, body, extraScript = "" }) {
         document.addEventListener("click", (event) => {
           const button = event.target.closest("[data-design-option]");
           if (button) apply(button.dataset.designOption);
+        });
+      })();
+      (() => {
+        const dock = document.querySelector(".floating-dock");
+        const toggle = document.querySelector("[data-dock-toggle]");
+        if (!dock || !toggle) return;
+        const applyDockState = (minimized) => {
+          dock.classList.toggle("is-minimized", minimized);
+          toggle.textContent = minimized ? "+" : "−";
+          toggle.setAttribute("aria-label", minimized ? "Maximizar acciones" : "Minimizar acciones");
+          toggle.setAttribute("aria-expanded", String(!minimized));
+          localStorage.setItem("crucru-dock-minimized", minimized ? "true" : "false");
+        };
+        applyDockState(localStorage.getItem("crucru-dock-minimized") === "true");
+        toggle.addEventListener("click", () => {
+          applyDockState(!dock.classList.contains("is-minimized"));
         });
       })();
       (() => {

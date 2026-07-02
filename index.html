@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Tenor+Sans&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260702-ppt-links" />
+    <link rel="stylesheet" href="/styles.css?v=20260702-dock-toggle" />
   </head>
   <body>
     <div class="announcement">
@@ -573,6 +573,7 @@
       </div>
     </section>
     <div class="floating-dock" aria-label="Acciones de presentación">
+      <button class="dock-toggle" type="button" aria-label="Minimizar acciones" aria-expanded="true" data-dock-toggle>−</button>
       <div class="variant-actions" aria-label="Variantes visuales">
         <button type="button" data-design-option="one">Opción 1</button>
         <button type="button" data-design-option="two">Opción 2</button>
@@ -601,6 +602,22 @@
         document.addEventListener("click", (event) => {
           const button = event.target.closest("[data-design-option]");
           if (button) apply(button.dataset.designOption);
+        });
+      })();
+      (() => {
+        const dock = document.querySelector(".floating-dock");
+        const toggle = document.querySelector("[data-dock-toggle]");
+        if (!dock || !toggle) return;
+        const applyDockState = (minimized) => {
+          dock.classList.toggle("is-minimized", minimized);
+          toggle.textContent = minimized ? "+" : "−";
+          toggle.setAttribute("aria-label", minimized ? "Maximizar acciones" : "Minimizar acciones");
+          toggle.setAttribute("aria-expanded", String(!minimized));
+          localStorage.setItem("crucru-dock-minimized", minimized ? "true" : "false");
+        };
+        applyDockState(localStorage.getItem("crucru-dock-minimized") === "true");
+        toggle.addEventListener("click", () => {
+          applyDockState(!dock.classList.contains("is-minimized"));
         });
       })();
       (() => {

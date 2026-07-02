@@ -314,7 +314,25 @@ button {
   z-index: 30;
   display: grid;
   gap: 8px;
-  width: min(360px, calc(100vw - 36px));
+  width: min(390px, calc(100vw - 36px));
+}
+
+.dock-toggle {
+  justify-self: end;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--forest);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(39, 58, 49, 0.18);
+  border-radius: var(--radius);
+  box-shadow: 0 14px 28px rgba(20, 24, 22, 0.16);
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  backdrop-filter: blur(14px);
 }
 
 .proposal-action,
@@ -339,12 +357,14 @@ button {
 
 .variant-actions {
   display: flex;
-  gap: 6px;
-  padding: 5px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  gap: 8px;
+  padding: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 42%),
+    rgba(39, 58, 49, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: var(--radius);
-  box-shadow: 0 18px 38px rgba(20, 24, 22, 0.12);
+  box-shadow: 0 20px 48px rgba(20, 24, 22, 0.22);
   backdrop-filter: blur(14px);
 }
 
@@ -356,14 +376,14 @@ button {
 
 .variant-actions button {
   flex: 1;
-  min-height: 34px;
-  padding: 0 10px;
+  min-height: 44px;
+  padding: 0 12px;
   color: var(--forest);
-  background: rgba(255, 255, 255, 0.5);
-  border-color: rgba(39, 58, 49, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(255, 255, 255, 0.28);
   box-shadow: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .variant-actions button.is-active {
@@ -388,9 +408,19 @@ button {
 
 .proposal-action:hover,
 .worldcup-action:hover,
+.dock-toggle:hover,
 .variant-actions button:hover {
   transform: translateY(-2px);
   box-shadow: 0 22px 48px rgba(20, 24, 22, 0.26);
+}
+
+.floating-dock.is-minimized {
+  width: auto;
+}
+
+.floating-dock.is-minimized .variant-actions,
+.floating-dock.is-minimized .dock-secondary-actions {
+  display: none;
 }
 
 .worldcup-modal {
