@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const ASSET_VERSION = "20260702-dock-toggle";
+const ASSET_VERSION = "20260702-final-dock-clean";
 const SITE_BASE_PATH = normalizeBasePath(process.env.SITE_BASE_PATH || "");
 const data = JSON.parse(await readFile(path.join(ROOT, "data", "products.json"), "utf8"));
 const products = data.products;
@@ -134,7 +134,6 @@ function pageShell({ title, description, body, extraScript = "" }) {
         <button type="button" data-design-option="three">Opción 3</button>
       </div>
       <div class="dock-secondary-actions">
-        <a class="worldcup-action" href="/propuesta/#activacion-mundial" data-open-worldcup>Activación Mundial</a>
         <a class="proposal-action" href="/propuesta/">Propuesta</a>
       </div>
     </div>
@@ -142,9 +141,7 @@ function pageShell({ title, description, body, extraScript = "" }) {
       (() => {
         const queryDesign = new URLSearchParams(window.location.search).get("design");
         const allowedDesigns = ["one", "two", "three"];
-        const saved = allowedDesigns.includes(queryDesign)
-          ? queryDesign
-          : localStorage.getItem("crucru-design-option") || "one";
+        const saved = allowedDesigns.includes(queryDesign) ? queryDesign : "one";
         const apply = (value) => {
           document.body.dataset.design = value;
           localStorage.setItem("crucru-design-option", value);
@@ -482,27 +479,6 @@ function homePage() {
             <summary>¿Hay productos por encargo?</summary>
             <p>Algunas prendas pueden tener tiempos de preparación. En esos casos conviene mostrarlo cerca del precio y reforzarlo en la ficha.</p>
           </details>
-        </div>
-      </section>
-      <section class="material-film" aria-label="Cueros y materiales de calidad">
-        <div class="material-film-copy">
-          <p class="eyebrow">Materiales</p>
-          <h2>Cueros, textura y terminaciones con presencia.</h2>
-          <p>Un bloque sensorial para reforzar el valor táctil de la marca: superficies nobles, detalles visibles y una lectura más editorial antes de volver al catálogo.</p>
-          <div class="material-points">
-            <span>Video reemplazable desde archivos de Tiendanube</span>
-            <span>Ideal para home, página de marca o colección</span>
-            <span>Compatible con CSS personalizado y contenido HTML</span>
-          </div>
-        </div>
-        <div class="material-video-card">
-          <video autoplay muted loop playsinline poster="/public/assets/brand/material-study-poster.webp">
-            <source src="/public/assets/brand/material-study.mp4" type="video/mp4" />
-          </video>
-          <div class="material-video-caption">
-            <span>Alta calidad</span>
-            <strong>Material study</strong>
-          </div>
         </div>
       </section>
       <section class="brand-film" aria-label="Video institucional Crucru">

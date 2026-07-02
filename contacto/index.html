@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Tenor+Sans&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260702-dock-toggle" />
+    <link rel="stylesheet" href="/styles.css?v=20260702-final-dock-clean" />
   </head>
   <body>
     <div class="announcement">
@@ -208,7 +208,6 @@
         <button type="button" data-design-option="three">Opción 3</button>
       </div>
       <div class="dock-secondary-actions">
-        <a class="worldcup-action" href="/propuesta/#activacion-mundial" data-open-worldcup>Activación Mundial</a>
         <a class="proposal-action" href="/propuesta/">Propuesta</a>
       </div>
     </div>
@@ -216,9 +215,7 @@
       (() => {
         const queryDesign = new URLSearchParams(window.location.search).get("design");
         const allowedDesigns = ["one", "two", "three"];
-        const saved = allowedDesigns.includes(queryDesign)
-          ? queryDesign
-          : localStorage.getItem("crucru-design-option") || "one";
+        const saved = allowedDesigns.includes(queryDesign) ? queryDesign : "one";
         const apply = (value) => {
           document.body.dataset.design = value;
           localStorage.setItem("crucru-design-option", value);

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Tenor+Sans&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260702-dock-toggle" />
+    <link rel="stylesheet" href="/styles.css?v=20260702-final-dock-clean" />
   </head>
   <body>
     <div class="announcement">
@@ -466,27 +466,6 @@
           </details>
         </div>
       </section>
-      <section class="material-film" aria-label="Cueros y materiales de calidad">
-        <div class="material-film-copy">
-          <p class="eyebrow">Materiales</p>
-          <h2>Cueros, textura y terminaciones con presencia.</h2>
-          <p>Un bloque sensorial para reforzar el valor táctil de la marca: superficies nobles, detalles visibles y una lectura más editorial antes de volver al catálogo.</p>
-          <div class="material-points">
-            <span>Video reemplazable desde archivos de Tiendanube</span>
-            <span>Ideal para home, página de marca o colección</span>
-            <span>Compatible con CSS personalizado y contenido HTML</span>
-          </div>
-        </div>
-        <div class="material-video-card">
-          <video autoplay muted loop playsinline poster="/public/assets/brand/material-study-poster.webp">
-            <source src="/public/assets/brand/material-study.mp4" type="video/mp4" />
-          </video>
-          <div class="material-video-caption">
-            <span>Alta calidad</span>
-            <strong>Material study</strong>
-          </div>
-        </div>
-      </section>
       <section class="brand-film" aria-label="Video institucional Crucru">
         <div class="brand-film-media">
           <video autoplay muted loop playsinline poster="/public/assets/brand/material-study-poster.webp">
@@ -580,7 +559,6 @@
         <button type="button" data-design-option="three">Opción 3</button>
       </div>
       <div class="dock-secondary-actions">
-        <a class="worldcup-action" href="/propuesta/#activacion-mundial" data-open-worldcup>Activación Mundial</a>
         <a class="proposal-action" href="/propuesta/">Propuesta</a>
       </div>
     </div>
@@ -588,9 +566,7 @@
       (() => {
         const queryDesign = new URLSearchParams(window.location.search).get("design");
         const allowedDesigns = ["one", "two", "three"];
-        const saved = allowedDesigns.includes(queryDesign)
-          ? queryDesign
-          : localStorage.getItem("crucru-design-option") || "one";
+        const saved = allowedDesigns.includes(queryDesign) ? queryDesign : "one";
         const apply = (value) => {
           document.body.dataset.design = value;
           localStorage.setItem("crucru-design-option", value);
