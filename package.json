@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "build": "node scripts/build-site.mjs",
+    "scrape": "node scripts/scrape-site.mjs",
+    "scrape:size-guide": "node scripts/scrape-size-guide.mjs",
+    "serve": "python3 -m http.server 5173",
+    "sync": "node scripts/scrape-site.mjs && node scripts/scrape-size-guide.mjs && node scripts/build-site.mjs"
+  }
+}

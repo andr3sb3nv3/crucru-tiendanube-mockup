@@ -1,0 +1,1460 @@
+{
+  "scrapedAt": "2026-07-01T17:19:51.754Z",
+  "source": "https://crucru3.mitiendanube.com",
+  "routes": {
+    "home": "/",
+    "products": "/productos/",
+    "contact": "/contacto/",
+    "sizeGuide": "/guia-de-talles/"
+  },
+  "products": [
+    {
+      "id": 1527679255,
+      "productId": 345210725,
+      "slug": "alpargata-yute-feline-6lyx9",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/alpargata-yute-feline-6lyx9/",
+      "localUrl": "/productos/alpargata-yute-feline-6lyx9/",
+      "name": "ALPARGATA YUTE FELINE",
+      "price": "$190.000,00",
+      "category": "calzado",
+      "tag": "Print",
+      "description": "Animal print con terminación artesanal para sumar textura al look.",
+      "sourceDescription": "Diseño atemporal UNISEX Exterior: cuero vacuno con pelo natural Color: leopardo Base de yute natural Interior en cuero Suela reforzada, costura a mano Hecho ...",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5af5af5c-57d4-4dc3-92a4-081421b1fc32-903-000001581b94c42e-768c205f308d843c4117792261702188-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/7c75c28e-7b06-4340-9fed-c5643fed16f8-903-00000158d035c004-7f0fe5d6f792d084d217792261796496-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 345210725,
+          "id": 1527679255,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "36",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        },
+        {
+          "productId": 345210725,
+          "id": 1527679257,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "37",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        },
+        {
+          "productId": 345210725,
+          "id": 1527679258,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "38",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        },
+        {
+          "productId": 345210725,
+          "id": 1527679261,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "39",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        },
+        {
+          "productId": 345210725,
+          "id": 1527679262,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "40",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        },
+        {
+          "productId": 345210725,
+          "id": 1527679263,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "41",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        },
+        {
+          "productId": 345210725,
+          "id": 1527679264,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "42",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        },
+        {
+          "productId": 345210725,
+          "id": 1527679265,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "43",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        },
+        {
+          "productId": 345210725,
+          "id": 1529126749,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "44",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        },
+        {
+          "productId": 345210725,
+          "id": 1538762989,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "45",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/5b54120b-5ab4-49ea-bc3a-e9a8ab6c0570-903-00000158fbacb890-1dbfde0cc5b259b3ef17792261590546-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "36",
+          "37",
+          "38",
+          "39",
+          "40",
+          "41",
+          "42",
+          "43",
+          "44",
+          "45"
+        ],
+        "option1": [],
+        "option2": []
+      },
+      "availableVariants": 10,
+      "localImages": [
+        "/public/assets/products/alpargata-yute-feline-6lyx9-01.webp",
+        "/public/assets/products/alpargata-yute-feline-6lyx9-02.webp",
+        "/public/assets/products/alpargata-yute-feline-6lyx9-03.webp"
+      ],
+      "localImage": "/public/assets/products/alpargata-yute-feline-6lyx9-01.webp"
+    },
+    {
+      "id": 1539545431,
+      "productId": 349166018,
+      "slug": "alpargata-yute-icon-15pom",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/alpargata-yute-icon-15pom/",
+      "localUrl": "/productos/alpargata-yute-icon-15pom/",
+      "name": "ALPARGATA YUTE HERO",
+      "price": "$190.000,00",
+      "category": "calzado",
+      "tag": "Nuevo",
+      "description": "Base cómoda, print expresivo y espíritu de edición limitada.",
+      "sourceDescription": "Edicion limitada UNISEX Exterior: cuero vacuno Color: estampado reptil Base de yute natural Interior en cuero Suela reforzada, costura a mano Hecho en Arge...",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/e7d3e13b-044d-4522-b764-58217622b301-510-0000009efc9c28c5-57b06a79d1dd0d3c3d17812694593537-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4790-984831dbb54528533417812166558888-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4787-56561f6d0803a4317917812166709580-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 349166018,
+          "id": 1539545431,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "36",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        },
+        {
+          "productId": 349166018,
+          "id": 1539545432,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "37",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        },
+        {
+          "productId": 349166018,
+          "id": 1539545433,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "38",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        },
+        {
+          "productId": 349166018,
+          "id": 1539545435,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "39",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        },
+        {
+          "productId": 349166018,
+          "id": 1539545436,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "40",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        },
+        {
+          "productId": 349166018,
+          "id": 1539545438,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "41",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        },
+        {
+          "productId": 349166018,
+          "id": 1539545440,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "42",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        },
+        {
+          "productId": 349166018,
+          "id": 1539545441,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "43",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        },
+        {
+          "productId": 349166018,
+          "id": 1539545442,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "44",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        },
+        {
+          "productId": 349166018,
+          "id": 1539545443,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "45",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_4788-d6e5b01085df76e4cc17812166713746-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "36",
+          "37",
+          "38",
+          "39",
+          "40",
+          "41",
+          "42",
+          "43",
+          "44",
+          "45"
+        ],
+        "option1": [],
+        "option2": []
+      },
+      "availableVariants": 10,
+      "localImages": [
+        "/public/assets/products/alpargata-yute-icon-15pom-01.webp",
+        "/public/assets/products/alpargata-yute-icon-15pom-02.webp",
+        "/public/assets/products/alpargata-yute-icon-15pom-03.webp",
+        "/public/assets/products/alpargata-yute-icon-15pom-04.webp"
+      ],
+      "localImage": "/public/assets/products/alpargata-yute-icon-15pom-01.webp"
+    },
+    {
+      "id": 1527629771,
+      "productId": 340174426,
+      "slug": "alpargata-yute-uumqx",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/alpargata-yute-uumqx/",
+      "localUrl": "/productos/alpargata-yute-uumqx/",
+      "name": "ALPARGATA YUTE NEGRO CON PELO",
+      "price": "$190.000,00",
+      "category": "calzado",
+      "tag": "Yute",
+      "description": "Alpargata de yute con textura protagonista y talles del 36 al 45.",
+      "sourceDescription": "Diseño atemporal UNISEX Exterior: cuero vacuno con pelo natural Color: negro Base de yute natural Interior en cuero Suela reforzada, costura a mano Hecho en...",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/unnamed-0a6748afb8add39b2d17770443542810-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/ee12a7b2-b092-454c-a74e-892ba5abbfb6-701-00000360130e105d-e529ab0997e3422a2317770443551947-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/a86eead5-1b6a-495f-b80d-4660cef3c4f8-701-0000035fef90c355-e54266ecf1d4c6e47d17770443548367-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2812f507-11c0-4d37-a5c8-1151c746c5d3-701-0000035fc74199eb-c67b8089a657f184b917770443686425-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/55a2332b-b85a-4e9b-a49f-4145ff3c68fb-701-0000035ecbd42df4-a0f83ec169edb2a27617770444308680-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/07aaedcb-3cf7-4914-9dd9-e3b54ee50e27-701-0000035f08c5032c-c7f17d441e2cf71b2e17770561552467-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 340174426,
+          "id": 1527629771,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "43",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        },
+        {
+          "productId": 340174426,
+          "id": 1527629775,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "36",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        },
+        {
+          "productId": 340174426,
+          "id": 1527629778,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "37",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        },
+        {
+          "productId": 340174426,
+          "id": 1527629784,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "38",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        },
+        {
+          "productId": 340174426,
+          "id": 1527629788,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "39",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        },
+        {
+          "productId": 340174426,
+          "id": 1527629790,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "41",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        },
+        {
+          "productId": 340174426,
+          "id": 1527629796,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "40",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        },
+        {
+          "productId": 340174426,
+          "id": 1527629799,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "42",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        },
+        {
+          "productId": 340174426,
+          "id": 1529127489,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "44",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        },
+        {
+          "productId": 340174426,
+          "id": 1538762736,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "45",
+          "option1": "NEGRO CON PELO ",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/81811e1f-1492-4094-bfa0-c615d4dae779-701-0000035f203593f9-63bcb815313c5330e817770514408631-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "43",
+          "36",
+          "37",
+          "38",
+          "39",
+          "41",
+          "40",
+          "42",
+          "44",
+          "45"
+        ],
+        "option1": [
+          "NEGRO CON PELO "
+        ],
+        "option2": []
+      },
+      "availableVariants": 10,
+      "localImages": [
+        "/public/assets/products/alpargata-yute-uumqx-01.webp",
+        "/public/assets/products/alpargata-yute-uumqx-02.webp",
+        "/public/assets/products/alpargata-yute-uumqx-03.webp",
+        "/public/assets/products/alpargata-yute-uumqx-04.webp",
+        "/public/assets/products/alpargata-yute-uumqx-05.webp",
+        "/public/assets/products/alpargata-yute-uumqx-06.webp",
+        "/public/assets/products/alpargata-yute-uumqx-07.webp"
+      ],
+      "localImage": "/public/assets/products/alpargata-yute-uumqx-01.webp"
+    },
+    {
+      "id": 1551307210,
+      "productId": 353131917,
+      "slug": "alpargata-yute-safari-n4daw",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/alpargata-yute-safari-n4daw/",
+      "localUrl": "/productos/alpargata-yute-safari-n4daw/",
+      "name": "ALPARGATA YUTE SAFARI",
+      "price": "$190.000,00",
+      "category": "calzado",
+      "tag": "Safari",
+      "description": "Yute y estampa safari para una silueta simple con personalidad.",
+      "sourceDescription": "Edicion limitada UNISEX Exterior: cuero vacuno con pelo color caramelo Color: estampado safari Base de yute natural Interior en cuero Suela reforzada, costu...",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/cfd37647-4605-443e-896c-81ac6a8e4d9e-1176-00000036e6aeb347-da96614226e5afe15f17827710897875-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/44de6ba9-e0b0-4048-9c6e-251e0f6b2499-1176-00000036d25b7751-3bb97a40f9baab367c17827711041574-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 353131917,
+          "id": 1551307210,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "36",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        },
+        {
+          "productId": 353131917,
+          "id": 1551307211,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "37",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        },
+        {
+          "productId": 353131917,
+          "id": 1551307213,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "38",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        },
+        {
+          "productId": 353131917,
+          "id": 1551307214,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "39",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        },
+        {
+          "productId": 353131917,
+          "id": 1551307215,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "40",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        },
+        {
+          "productId": 353131917,
+          "id": 1551307216,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "41",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        },
+        {
+          "productId": 353131917,
+          "id": 1551307217,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "42",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        },
+        {
+          "productId": 353131917,
+          "id": 1551307218,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "43",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        },
+        {
+          "productId": 353131917,
+          "id": 1551307220,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "44",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        },
+        {
+          "productId": 353131917,
+          "id": 1551307221,
+          "available": true,
+          "stock": null,
+          "price": "$190.000,00",
+          "option0": "45",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/158907eb-b8bd-4010-8087-d35d579ca00e-1176-0000003676a67533-1eb2b81cb31c5d575017827710728731-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "36",
+          "37",
+          "38",
+          "39",
+          "40",
+          "41",
+          "42",
+          "43",
+          "44",
+          "45"
+        ],
+        "option1": [],
+        "option2": []
+      },
+      "availableVariants": 10,
+      "localImages": [
+        "/public/assets/products/alpargata-yute-safari-n4daw-01.webp",
+        "/public/assets/products/alpargata-yute-safari-n4daw-02.webp",
+        "/public/assets/products/alpargata-yute-safari-n4daw-03.webp"
+      ],
+      "localImage": "/public/assets/products/alpargata-yute-safari-n4daw-01.webp"
+    },
+    {
+      "id": 1529392364,
+      "productId": 345863216,
+      "slug": "alpargata-yute-tiger-1j36r",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/alpargata-yute-tiger-1j36r/",
+      "localUrl": "/productos/alpargata-yute-tiger-1j36r/",
+      "name": "ALPARGATA YUTE TIGER",
+      "price": "$190.000,00",
+      "category": "calzado",
+      "tag": "Print",
+      "description": "Una pieza liviana con impacto visual y disponibilidad acotada.",
+      "sourceDescription": "Diseño atemporal UNISEX Exterior: descarne gamuzada Color: marron caramelo, estampado tigre Base de yute natural Interior en cuero Suela reforzada, costura ...",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/82a406e6-0931-4699-b867-9a8c2914fdb6-45677f67b2d84a07a317794525889664-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/82a406e6-0931-4699-b867-9a8c2914fdb6-45677f67b2d84a07a317794525889664-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 345863216,
+          "id": 1529392364,
+          "available": true,
+          "stock": 1,
+          "price": "$190.000,00",
+          "option0": "38",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/82a406e6-0931-4699-b867-9a8c2914fdb6-45677f67b2d84a07a317794525889664-1024-1024.webp"
+        },
+        {
+          "productId": 345863216,
+          "id": 1529392365,
+          "available": false,
+          "stock": 0,
+          "price": "$190.000,00",
+          "option0": "41",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/82a406e6-0931-4699-b867-9a8c2914fdb6-45677f67b2d84a07a317794525889664-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "38",
+          "41"
+        ],
+        "option1": [],
+        "option2": []
+      },
+      "availableVariants": 1,
+      "localImages": [
+        "/public/assets/products/alpargata-yute-tiger-1j36r-01.webp"
+      ],
+      "localImage": "/public/assets/products/alpargata-yute-tiger-1j36r-01.webp"
+    },
+    {
+      "id": 1323261422,
+      "productId": 282426570,
+      "slug": "bota-salvaje",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/bota-salvaje/",
+      "localUrl": "/productos/bota-salvaje/",
+      "name": "BOTA SALVAJE",
+      "price": "$310.000,00",
+      "category": "calzado",
+      "tag": "Botas",
+      "description": "Bota de carácter fuerte para combinar con capas y prendas de invierno.",
+      "sourceDescription": "Confeccionada en descarne gamuzada.Color base marron carameloEstampa rayado tipo tigre en tonos marron oscuro.10% off abonando por tranferencia bancaria.Una ...",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2a1c132b-4efc-437e-a566-a8f174f81ac9-2684-0000011d9000b337-e172abadd003ebc67617594433150848-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/04bae267-2ff3-4e5a-bc6b-a0fe33e015db-2684-0000011dad2c9b2d-b46d3125a5f299b1ca17594433695791-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/8de051da-8c9e-44ac-8bfe-3cc70a452bbd-2684-0000011dc6b4411b-d709027a9c93a1891317594433800879-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/ef49137d-6d0b-4dbd-8585-002e05baff69-807-000000877baabc5c-755dd6f29b7910064d17770565860760-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2a1c132b-4efc-437e-a566-a8f174f81ac9-2684-0000011d9000b337-e172abadd003ebc67617594433150848-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 282426570,
+          "id": 1323261422,
+          "available": true,
+          "stock": 1,
+          "price": "$310.000,00",
+          "option0": "36",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2a1c132b-4efc-437e-a566-a8f174f81ac9-2684-0000011d9000b337-e172abadd003ebc67617594433150848-1024-1024.webp"
+        },
+        {
+          "productId": 282426570,
+          "id": 1323261428,
+          "available": false,
+          "stock": 0,
+          "price": "$310.000,00",
+          "option0": "37",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2a1c132b-4efc-437e-a566-a8f174f81ac9-2684-0000011d9000b337-e172abadd003ebc67617594433150848-1024-1024.webp"
+        },
+        {
+          "productId": 282426570,
+          "id": 1263214665,
+          "available": false,
+          "stock": 0,
+          "price": "$310.000,00",
+          "option0": "38",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2a1c132b-4efc-437e-a566-a8f174f81ac9-2684-0000011d9000b337-e172abadd003ebc67617594433150848-1024-1024.webp"
+        },
+        {
+          "productId": 282426570,
+          "id": 1323261436,
+          "available": false,
+          "stock": 0,
+          "price": "$310.000,00",
+          "option0": "39",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2a1c132b-4efc-437e-a566-a8f174f81ac9-2684-0000011d9000b337-e172abadd003ebc67617594433150848-1024-1024.webp"
+        },
+        {
+          "productId": 282426570,
+          "id": 1323261438,
+          "available": false,
+          "stock": 0,
+          "price": "$310.000,00",
+          "option0": "40",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2a1c132b-4efc-437e-a566-a8f174f81ac9-2684-0000011d9000b337-e172abadd003ebc67617594433150848-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "36",
+          "37",
+          "38",
+          "39",
+          "40"
+        ],
+        "option1": [],
+        "option2": []
+      },
+      "availableVariants": 1,
+      "localImages": [
+        "/public/assets/products/bota-salvaje-01.webp",
+        "/public/assets/products/bota-salvaje-02.webp",
+        "/public/assets/products/bota-salvaje-03.webp",
+        "/public/assets/products/bota-salvaje-04.webp"
+      ],
+      "localImage": "/public/assets/products/bota-salvaje-01.webp"
+    },
+    {
+      "id": 1483271988,
+      "productId": 285382354,
+      "slug": "saco-nido",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/saco-nido/",
+      "localUrl": "/productos/saco-nido/",
+      "name": "SACO NIDO",
+      "price": "$360.000,00",
+      "category": "abrigos",
+      "tag": "Abrigo",
+      "description": "Saco amplio y envolvente disponible en tonos chocolate, natural, gris y degradé.",
+      "sourceDescription": "Sacon NIDO tejido artesanalmente en lana pura natural, textura noble y durabilidad.ENTREGA ESTIMADA 10 DÍAS HÁBILES. 10% off abonando por tranferencia bancar...",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/650b14c4-5123-4b91-a354-fca6a784e86c-5169-000001e4372c23cb-1-cdfbdcdeca085b6fa017770360654549-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/3fb1f1a7-e7a5-4653-9d82-a4f757aa0c30-5169-000001e411512b63-f12e8da36e90a8f3b017770361192952-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/f11fff16-c8bf-4456-82cb-5f1f9d49da32-5169-000001e455d8135d-1-d4f0c5edad46c34b1e17770434415720-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/8c0230a7-d9df-43f2-9206-1418ebf24509-631-000000a35d684c3d-168c0efa615d3492ae17773291175633-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/b0958965-7fda-499a-ad52-62bbbc8797cf-631-000000a30233d5d0-8d6112273979bd45d717773291339231-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/3eea9bff-4a4d-43d8-8a08-6a32dbe3236c-e3df7ea6bdf85809e817781667395913-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/953fb092-ce9f-41af-bcbc-250298594a68-2b7c7c16da3d4c80b017781667450853-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/d3c64b92-ce05-4e96-ab31-2f5da836a315-13d74e1a4262472d1b17781667617334-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/3021e6c8-ec28-4400-88af-a62b3412a54d-631-000000a37ae005e8-3680bbfd2895311be817781669957238-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/650b14c4-5123-4b91-a354-fca6a784e86c-5169-000001e4372c23cb-1-cdfbdcdeca085b6fa017770360654549-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 285382354,
+          "id": 1483271988,
+          "available": true,
+          "stock": null,
+          "price": "$360.000,00",
+          "option0": "Chocolate",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/650b14c4-5123-4b91-a354-fca6a784e86c-5169-000001e4372c23cb-1-cdfbdcdeca085b6fa017770360654549-1024-1024.webp"
+        },
+        {
+          "productId": 285382354,
+          "id": 1483271990,
+          "available": false,
+          "stock": 0,
+          "price": "$360.000,00",
+          "option0": "Negro",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/650b14c4-5123-4b91-a354-fca6a784e86c-5169-000001e4372c23cb-1-cdfbdcdeca085b6fa017770360654549-1024-1024.webp"
+        },
+        {
+          "productId": 285382354,
+          "id": 1513908678,
+          "available": true,
+          "stock": null,
+          "price": "$360.000,00",
+          "option0": "Degradé",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/3021e6c8-ec28-4400-88af-a62b3412a54d-631-000000a37ae005e8-3680bbfd2895311be817781669957238-1024-1024.webp"
+        },
+        {
+          "productId": 285382354,
+          "id": 1519988623,
+          "available": true,
+          "stock": null,
+          "price": "$360.000,00",
+          "option0": "Natural",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/953fb092-ce9f-41af-bcbc-250298594a68-2b7c7c16da3d4c80b017781667450853-1024-1024.webp"
+        },
+        {
+          "productId": 285382354,
+          "id": 1519988624,
+          "available": true,
+          "stock": null,
+          "price": "$360.000,00",
+          "option0": "Gris",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/3eea9bff-4a4d-43d8-8a08-6a32dbe3236c-e3df7ea6bdf85809e817781667395913-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "Chocolate",
+          "Negro",
+          "Degradé",
+          "Natural",
+          "Gris"
+        ],
+        "option1": [],
+        "option2": []
+      },
+      "availableVariants": 4,
+      "localImages": [
+        "/public/assets/products/saco-nido-01.webp",
+        "/public/assets/products/saco-nido-02.webp",
+        "/public/assets/products/saco-nido-03.webp",
+        "/public/assets/products/saco-nido-04.webp",
+        "/public/assets/products/saco-nido-05.webp",
+        "/public/assets/products/saco-nido-06.webp",
+        "/public/assets/products/saco-nido-07.webp",
+        "/public/assets/products/saco-nido-08.webp",
+        "/public/assets/products/saco-nido-09.webp"
+      ],
+      "localImage": "/public/assets/products/saco-nido-01.webp"
+    },
+    {
+      "id": 1235427206,
+      "productId": 271324266,
+      "slug": "sacon-nube",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/sacon-nube/",
+      "localUrl": "/productos/sacon-nube/",
+      "name": "SACON NUBE",
+      "price": "$390.000,00",
+      "category": "abrigos",
+      "tag": "Abrigo",
+      "description": "Volumen suave, silueta cómoda y colores neutros para uso cotidiano.",
+      "sourceDescription": "Sacon Nube tejido artesanalmente en lana pura natural, textura noble y durabilidad.ENTREGA ESTIMADA 10 DÍAS.\\10% off abonando por tranferencia bancaria.Una v...",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/a1c8c108-a7bc-472c-991c-0bc81272fdc2-2604-000000f547a5fdec-a28017e7b3589f2dd117476043331066-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/bbb3faf8-1310-4bd6-8157-486e028651d2-2604-000000f5848ea834-1-5bd16092a93d87403317476042471837-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/0a1afd63-4470-4e55-8157-69da87db66c0-2604-000000f539519564-c4d1b6900c7a35834617476718922192-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_2039-f1e4dfef5327e7f9e817500090026437-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_2038-254b79ec2cb7a326ac17500090019144-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_2037-28d796cde95ea006ea17500090018208-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/3e529298-edf6-4604-ae13-79f041c568cb-8f3a64f3be33b271a617781664770815-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/a1c8c108-a7bc-472c-991c-0bc81272fdc2-2604-000000f547a5fdec-a28017e7b3589f2dd117476043331066-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 271324266,
+          "id": 1235427206,
+          "available": true,
+          "stock": null,
+          "price": "$390.000,00",
+          "option0": "chocolate",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/img_2038-254b79ec2cb7a326ac17500090019144-1024-1024.webp"
+        },
+        {
+          "productId": 271324266,
+          "id": 1235427210,
+          "available": true,
+          "stock": null,
+          "price": "$390.000,00",
+          "option0": "natural",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/3e529298-edf6-4604-ae13-79f041c568cb-8f3a64f3be33b271a617781664770815-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "chocolate",
+          "natural"
+        ],
+        "option1": [],
+        "option2": []
+      },
+      "availableVariants": 2,
+      "localImages": [
+        "/public/assets/products/sacon-nube-01.webp",
+        "/public/assets/products/sacon-nube-02.webp",
+        "/public/assets/products/sacon-nube-03.webp",
+        "/public/assets/products/sacon-nube-04.webp",
+        "/public/assets/products/sacon-nube-05.webp",
+        "/public/assets/products/sacon-nube-06.webp",
+        "/public/assets/products/sacon-nube-07.webp"
+      ],
+      "localImage": "/public/assets/products/sacon-nube-01.webp"
+    },
+    {
+      "id": 1511564827,
+      "productId": 340142654,
+      "slug": "slippers-salvaje-3jl4n",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/slippers-salvaje-3jl4n/",
+      "localUrl": "/productos/slippers-salvaje-3jl4n/",
+      "name": "SLIPPERS",
+      "price": "$140.000,00",
+      "category": "calzado",
+      "tag": "Cómodo",
+      "description": "Slippers con variantes de color y print para uso diario.",
+      "sourceDescription": "Slippers edicion limitada.ENTREGA ESTIMADA 15 DÍAS.15% off abonando por tranferencia bancaria.Una vez realizada la compra te enviaremos los datos.",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2026-01-02-07-45-01-aa267ea3c44215986f17770552204298-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/3ab3563d-8bfb-4119-a7bf-92c38b622e86-803-000001e1006f6691-5dd570ea2a1f98ae8917770373410750-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/9320b9f9-0974-4826-9abb-7d070e65dc45-3134-000001c0e793480e-5e949d0edb955e80d517770375750387-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/31f7b13c-1c5e-45d1-849d-e596fc2ea357-1251-000001b762b56171-3502e5223ed3b22af317770375758086-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2ffac0d0-78b6-4b89-bf93-b46cc0308b5e-883-0000012133b3477b-e20360a99b3d52b3d817770375754061-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-04-08-14-55-24-9af5a4e9b760a1ff7617770376131688-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-02-05-18-45-47-0531903cbe9698989217770376132011-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2ffac0d0-78b6-4b89-bf93-b46cc0308b5e-883-0000012133b3477b-86c2b68c18901458e317770377280163-1024-1024.webp",
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/4bb5bb45-a8ea-4676-a74f-eea56b1fd2bd-1168-000000bac39d973b-14c3473dea67df185217770377970242-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2026-01-02-07-45-01-aa267ea3c44215986f17770552204298-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 340142654,
+          "id": 1511564827,
+          "available": true,
+          "stock": 1,
+          "price": "$140.000,00",
+          "option0": "SALVAJE ",
+          "option1": "36",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2026-01-02-07-45-01-aa267ea3c44215986f17770552204298-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564828,
+          "available": true,
+          "stock": 1,
+          "price": "$140.000,00",
+          "option0": "SALVAJE ",
+          "option1": "37",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2026-01-02-07-45-01-aa267ea3c44215986f17770552204298-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564829,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "SALVAJE ",
+          "option1": "38",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2026-01-02-07-45-01-aa267ea3c44215986f17770552204298-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564830,
+          "available": true,
+          "stock": 1,
+          "price": "$140.000,00",
+          "option0": "SALVAJE ",
+          "option1": "39",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2026-01-02-07-45-01-aa267ea3c44215986f17770552204298-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564831,
+          "available": true,
+          "stock": 1,
+          "price": "$140.000,00",
+          "option0": "SALVAJE ",
+          "option1": "40",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2026-01-02-07-45-01-aa267ea3c44215986f17770552204298-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564832,
+          "available": true,
+          "stock": 1,
+          "price": "$140.000,00",
+          "option0": "PANTERA ",
+          "option1": "36",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-02-05-18-45-47-0531903cbe9698989217770376132011-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564834,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "PANTERA ",
+          "option1": "37",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-02-05-18-45-47-0531903cbe9698989217770376132011-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564835,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "PANTERA ",
+          "option1": "38",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-02-05-18-45-47-0531903cbe9698989217770376132011-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564837,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "PANTERA ",
+          "option1": "39",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-02-05-18-45-47-0531903cbe9698989217770376132011-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564838,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "PANTERA ",
+          "option1": "40",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-02-05-18-45-47-0531903cbe9698989217770376132011-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564840,
+          "available": true,
+          "stock": 1,
+          "price": "$140.000,00",
+          "option0": "CIELO ",
+          "option1": "36",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/9320b9f9-0974-4826-9abb-7d070e65dc45-3134-000001c0e793480e-5e949d0edb955e80d517770375750387-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564842,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CIELO ",
+          "option1": "37",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/9320b9f9-0974-4826-9abb-7d070e65dc45-3134-000001c0e793480e-5e949d0edb955e80d517770375750387-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564844,
+          "available": true,
+          "stock": 1,
+          "price": "$140.000,00",
+          "option0": "CIELO ",
+          "option1": "38",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/9320b9f9-0974-4826-9abb-7d070e65dc45-3134-000001c0e793480e-5e949d0edb955e80d517770375750387-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564846,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CIELO ",
+          "option1": "39",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/9320b9f9-0974-4826-9abb-7d070e65dc45-3134-000001c0e793480e-5e949d0edb955e80d517770375750387-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564847,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CIELO ",
+          "option1": "40",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/9320b9f9-0974-4826-9abb-7d070e65dc45-3134-000001c0e793480e-5e949d0edb955e80d517770375750387-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564848,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CHITA",
+          "option1": "36",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2ffac0d0-78b6-4b89-bf93-b46cc0308b5e-883-0000012133b3477b-86c2b68c18901458e317770377280163-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564849,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CHITA",
+          "option1": "37",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2ffac0d0-78b6-4b89-bf93-b46cc0308b5e-883-0000012133b3477b-86c2b68c18901458e317770377280163-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564850,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CHITA",
+          "option1": "38",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2ffac0d0-78b6-4b89-bf93-b46cc0308b5e-883-0000012133b3477b-86c2b68c18901458e317770377280163-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564851,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CHITA",
+          "option1": "39",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2ffac0d0-78b6-4b89-bf93-b46cc0308b5e-883-0000012133b3477b-86c2b68c18901458e317770377280163-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564852,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CHITA",
+          "option1": "40",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/2ffac0d0-78b6-4b89-bf93-b46cc0308b5e-883-0000012133b3477b-86c2b68c18901458e317770377280163-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564854,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CEBRA ",
+          "option1": "36",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/4bb5bb45-a8ea-4676-a74f-eea56b1fd2bd-1168-000000bac39d973b-14c3473dea67df185217770377970242-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564855,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CEBRA ",
+          "option1": "37",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/4bb5bb45-a8ea-4676-a74f-eea56b1fd2bd-1168-000000bac39d973b-14c3473dea67df185217770377970242-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564856,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CEBRA ",
+          "option1": "38",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/4bb5bb45-a8ea-4676-a74f-eea56b1fd2bd-1168-000000bac39d973b-14c3473dea67df185217770377970242-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564857,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CEBRA ",
+          "option1": "39",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/4bb5bb45-a8ea-4676-a74f-eea56b1fd2bd-1168-000000bac39d973b-14c3473dea67df185217770377970242-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511564858,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "CEBRA ",
+          "option1": "40",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/4bb5bb45-a8ea-4676-a74f-eea56b1fd2bd-1168-000000bac39d973b-14c3473dea67df185217770377970242-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511567902,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "RED WILD",
+          "option1": "36",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/31f7b13c-1c5e-45d1-849d-e596fc2ea357-1251-000001b762b56171-3502e5223ed3b22af317770375758086-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511567903,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "RED WILD",
+          "option1": "37",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/31f7b13c-1c5e-45d1-849d-e596fc2ea357-1251-000001b762b56171-3502e5223ed3b22af317770375758086-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511567904,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "RED WILD",
+          "option1": "38",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/31f7b13c-1c5e-45d1-849d-e596fc2ea357-1251-000001b762b56171-3502e5223ed3b22af317770375758086-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511567905,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "RED WILD",
+          "option1": "39",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/31f7b13c-1c5e-45d1-849d-e596fc2ea357-1251-000001b762b56171-3502e5223ed3b22af317770375758086-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511567906,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "RED WILD",
+          "option1": "40",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/31f7b13c-1c5e-45d1-849d-e596fc2ea357-1251-000001b762b56171-3502e5223ed3b22af317770375758086-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511819591,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "WAKA ",
+          "option1": "36",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-04-08-14-55-24-9af5a4e9b760a1ff7617770376131688-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511819592,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "WAKA ",
+          "option1": "37",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-04-08-14-55-24-9af5a4e9b760a1ff7617770376131688-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511819594,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "WAKA ",
+          "option1": "38",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-04-08-14-55-24-9af5a4e9b760a1ff7617770376131688-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511819597,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "WAKA ",
+          "option1": "39",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-04-08-14-55-24-9af5a4e9b760a1ff7617770376131688-1024-1024.webp"
+        },
+        {
+          "productId": 340142654,
+          "id": 1511819601,
+          "available": false,
+          "stock": 0,
+          "price": "$140.000,00",
+          "option0": "WAKA ",
+          "option1": "40",
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/photo-2025-04-08-14-55-24-9af5a4e9b760a1ff7617770376131688-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "SALVAJE ",
+          "PANTERA ",
+          "CIELO ",
+          "CHITA",
+          "CEBRA ",
+          "RED WILD",
+          "WAKA "
+        ],
+        "option1": [
+          "36",
+          "37",
+          "38",
+          "39",
+          "40"
+        ],
+        "option2": []
+      },
+      "availableVariants": 7,
+      "localImages": [
+        "/public/assets/products/slippers-salvaje-3jl4n-01.webp",
+        "/public/assets/products/slippers-salvaje-3jl4n-02.webp",
+        "/public/assets/products/slippers-salvaje-3jl4n-03.webp",
+        "/public/assets/products/slippers-salvaje-3jl4n-04.webp",
+        "/public/assets/products/slippers-salvaje-3jl4n-05.webp",
+        "/public/assets/products/slippers-salvaje-3jl4n-06.webp",
+        "/public/assets/products/slippers-salvaje-3jl4n-07.webp",
+        "/public/assets/products/slippers-salvaje-3jl4n-08.webp",
+        "/public/assets/products/slippers-salvaje-3jl4n-09.webp"
+      ],
+      "localImage": "/public/assets/products/slippers-salvaje-3jl4n-01.webp"
+    },
+    {
+      "id": 1533618338,
+      "productId": 347276656,
+      "slug": "sweater-x7zuc",
+      "sourceUrl": "https://crucru3.mitiendanube.com/productos/sweater-x7zuc/",
+      "localUrl": "/productos/sweater-x7zuc/",
+      "name": "SWEATER MOHAIR SELVA",
+      "price": "$225.000,00",
+      "category": "tejidos",
+      "tag": "Mohair",
+      "description": "Tejido con pelo, textura selva y calce relajado en talles M y L.",
+      "sourceDescription": "Mohair tejido artesanalmente. Silueta relajada, textura suave y liviana. Hecho en Argentina. Talles M Largo total: 64 cm Ancho de pecho: 52 cm Largo de manga...",
+      "images": [
+        "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/0f025d60-1652-426d-87ad-a9972a90b147-850-00000052239022bd-bd18f3b4c7bb9b57fd17800546038231-1024-1024.webp"
+      ],
+      "image": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/0f025d60-1652-426d-87ad-a9972a90b147-850-00000052239022bd-bd18f3b4c7bb9b57fd17800546038231-1024-1024.webp",
+      "variants": [
+        {
+          "productId": 347276656,
+          "id": 1533618338,
+          "available": true,
+          "stock": null,
+          "price": "$225.000,00",
+          "option0": "M",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/0f025d60-1652-426d-87ad-a9972a90b147-850-00000052239022bd-bd18f3b4c7bb9b57fd17800546038231-1024-1024.webp"
+        },
+        {
+          "productId": 347276656,
+          "id": 1533618339,
+          "available": true,
+          "stock": null,
+          "price": "$225.000,00",
+          "option0": "L",
+          "option1": null,
+          "option2": null,
+          "imageUrl": "https://dcdn-us.mitiendanube.com/stores/005/921/878/products/0f025d60-1652-426d-87ad-a9972a90b147-850-00000052239022bd-bd18f3b4c7bb9b57fd17800546038231-1024-1024.webp"
+        }
+      ],
+      "options": {
+        "option0": [
+          "M",
+          "L"
+        ],
+        "option1": [],
+        "option2": []
+      },
+      "availableVariants": 2,
+      "localImages": [
+        "/public/assets/products/sweater-x7zuc-01.webp"
+      ],
+      "localImage": "/public/assets/products/sweater-x7zuc-01.webp"
+    }
+  ]
+}

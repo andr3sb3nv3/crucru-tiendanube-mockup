@@ -1,0 +1,241 @@
+{
+  "scrapedAt": "2026-07-01T17:47:04.348Z",
+  "sourceUrl": "https://crucru3.mitiendanube.com/guia-de-talles/",
+  "description": "Informá las medidas de tus productos a tus clientes. Podés usar una tabla, por ejemplo. Las medidas incluidas son de referencia, la idea es que puedas person...",
+  "disclaimer": "Las medidas incluidas son de referencia. Para producción, conviene reemplazarlas por medidas validadas por Crucru para cada producto.",
+  "sections": [
+    {
+      "title": "Remeras",
+      "note": "Todas las medidas están expresadas en centímetros.",
+      "headers": [
+        "Talle",
+        "Pecho",
+        "Cintura",
+        "Cadera"
+      ],
+      "rows": [
+        [
+          "XXS",
+          "73-76",
+          "57-60",
+          "82-85"
+        ],
+        [
+          "XS",
+          "77-82",
+          "61-66",
+          "86-91"
+        ],
+        [
+          "S",
+          "83-88",
+          "67-72",
+          "92-97"
+        ],
+        [
+          "M",
+          "89-94",
+          "73-78",
+          "98-103"
+        ],
+        [
+          "L",
+          "95-101",
+          "79-85",
+          "104-110"
+        ],
+        [
+          "XL",
+          "102-109",
+          "86-94",
+          "111-117"
+        ],
+        [
+          "2XL",
+          "110-118",
+          "94-104",
+          "118-125"
+        ]
+      ]
+    },
+    {
+      "title": "Pantalones",
+      "note": "Todas las medidas están expresadas en centímetros.",
+      "headers": [
+        "Talle",
+        "Cintura",
+        "Cadera",
+        "Entrepierna"
+      ],
+      "rows": [
+        [
+          "XXS",
+          "57-60",
+          "82-85",
+          "77.5"
+        ],
+        [
+          "XS",
+          "61-66",
+          "86-91",
+          "78"
+        ],
+        [
+          "S",
+          "67-72",
+          "92-97",
+          "78.5"
+        ],
+        [
+          "M",
+          "73-78",
+          "98-103",
+          "79"
+        ],
+        [
+          "L",
+          "79-85",
+          "104-110",
+          "79.5"
+        ],
+        [
+          "XL",
+          "86-94",
+          "111-117",
+          "80"
+        ],
+        [
+          "2XL",
+          "94-104",
+          "118-125",
+          "80.5"
+        ]
+      ]
+    },
+    {
+      "title": "Calzado",
+      "note": "Todas las medidas están expresadas en centímetros.",
+      "headers": [
+        "Medida del pie",
+        "AR",
+        "UK",
+        "EUR",
+        "US"
+      ],
+      "rows": [
+        [
+          "22.1 cm",
+          "34.5",
+          "3.5",
+          "35.5",
+          "5"
+        ],
+        [
+          "22.5 cm",
+          "35.5",
+          "4",
+          "36.5",
+          "5.5"
+        ],
+        [
+          "22.9 cm",
+          "36",
+          "4.5",
+          "37",
+          "6"
+        ],
+        [
+          "23.3 cm",
+          "36.5",
+          "5",
+          "37.5",
+          "6.5"
+        ],
+        [
+          "23.8 cm",
+          "37.5",
+          "5.5",
+          "38.5",
+          "7"
+        ],
+        [
+          "24.2 cm",
+          "38",
+          "6",
+          "39",
+          "7.5"
+        ],
+        [
+          "24.6 cm",
+          "38.5",
+          "6.5",
+          "39.5",
+          "8"
+        ],
+        [
+          "25.0 cm",
+          "39",
+          "7",
+          "40",
+          "8.5"
+        ],
+        [
+          "25.5 cm",
+          "39.5",
+          "7.5",
+          "40.5",
+          "9"
+        ],
+        [
+          "25.9 cm",
+          "40",
+          "8",
+          "41",
+          "9.5"
+        ],
+        [
+          "26.3 cm",
+          "41",
+          "8.5",
+          "42",
+          "10"
+        ],
+        [
+          "26.7 cm",
+          "41.5",
+          "9",
+          "42.5",
+          "10.5"
+        ],
+        [
+          "27.1 cm",
+          "42",
+          "9.5",
+          "43",
+          "11"
+        ],
+        [
+          "27.6 cm",
+          "43",
+          "10",
+          "44",
+          "11.5"
+        ],
+        [
+          "28.0 cm",
+          "43.5",
+          "10.5",
+          "44.5",
+          "12"
+        ],
+        [
+          "28.4 cm",
+          "44",
+          "11",
+          "45",
+          "12.5"
+        ]
+      ]
+    }
+  ]
+}
