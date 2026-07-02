@@ -312,12 +312,11 @@ button {
   right: 18px;
   bottom: 18px;
   z-index: 30;
-  display: flex;
-  align-items: end;
+  display: grid;
   gap: 8px;
+  width: min(360px, calc(100vw - 36px));
 }
 
-.floating-contact,
 .proposal-action,
 .worldcup-action,
 .variant-actions button {
@@ -349,7 +348,14 @@ button {
   backdrop-filter: blur(14px);
 }
 
+.dock-secondary-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 8px;
+}
+
 .variant-actions button {
+  flex: 1;
   min-height: 34px;
   padding: 0 10px;
   color: var(--forest);
@@ -380,7 +386,6 @@ button {
   border-color: transparent;
 }
 
-.floating-contact:hover,
 .proposal-action:hover,
 .worldcup-action:hover,
 .variant-actions button:hover {
@@ -3383,11 +3388,10 @@ p {
     left: 12px;
     right: 12px;
     bottom: 12px;
-    display: grid;
     grid-template-columns: 1fr;
+    width: auto;
   }
 
-  .floating-contact,
   .worldcup-action,
   .proposal-action {
     width: 100%;
