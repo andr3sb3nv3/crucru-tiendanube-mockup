@@ -1,0 +1,45 @@
+[
+  {
+    "id": "1783423776629-230178df39b408",
+    "status": "done",
+    "playDate": "2026-07-10",
+    "runDate": "2026-07-07",
+    "runTime": "08:35",
+    "runAtLocal": "2026-07-07T08:35:00",
+    "bookingOpenDate": "2026-07-07",
+    "memberIds": [
+      "135890",
+      "105581",
+      "138121",
+      "130742"
+    ],
+    "playerData": [
+      {
+        "memberId": "135890",
+        "documentId": ""
+      },
+      {
+        "memberId": "105581",
+        "documentId": "16763366"
+      },
+      {
+        "memberId": "138121",
+        "documentId": "40388889"
+      },
+      {
+        "memberId": "130742",
+        "documentId": "39770573"
+      }
+    ],
+    "players": 4,
+    "bookingText": "practica deportiva feriado",
+    "timeWindowStart": "12:30",
+    "timeWindowEnd": "14:30",
+    "createdAt": "2026-07-07T11:29:36.629Z",
+    "lastRunAt": "2026-07-07T11:36:32.582Z",
+    "lastError": null,
+    "runMode": "scheduled",
+    "lastStdout": "Abriendo https://www.golf-tracker.com/main\nScreenshot: outputs/golf-agent/2026-07-07T11-35-11-499Z-01-home.png\nEntrando a la lista de campos\nSeleccionando club: Lagos de Palermo\nIngresando al club\nAbriendo panel de login\nIngresando credenciales\nScreenshot: outputs/golf-agent/2026-07-07T11-35-23-464Z-02-after-login.png\nEntrando a reservas desde la navegación\nBuscando turno 2026-07-10 entre 12:30 y 14:30 (1/1)\nAbriendo calendario para elegir 2026-07-10\nEsperando que termine de cargar la grilla.\nMejor línea para 4 jugadores: 12:30 (dentro del rango elegido, 4 espacios visibles)\nClick en turno sin cartel visible (centro).\nScreenshot: outputs/golf-agent/2026-07-07T11-36-14-126Z-03-slot-selected.png\nReservando el primer espacio con el usuario logueado.\nEsperando que Golf Tracker cree la reserva base.\nReserva base creada; ya aparece la opción para agregar jugadores.\nIntentando agregar jugadores a la línea: 105581, 138121, 130742\nVerificando matrícula 105581.\nReservando jugador 105581.\nVerificando matrícula 138121.\nReservando jugador 138121.\nVerificando matrícula 130742.\nReservando jugador 130742.\nScreenshot: outputs/golf-agent/2026-07-07T11-36-32-383Z-04-reservation-confirmed.png\nSolicitud de reserva enviada.\n",
+    "lastStderr": ""
+  }
+]

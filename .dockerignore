@@ -1,0 +1,7 @@
+.DS_Store
+.git
+.env.golf
+node_modules
+outputs
+data/golf-reservations.json
+npm-debug.log

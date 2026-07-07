@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reservas de golf</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #17202a;
+      background: #f4f7f5;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      line-height: 1.1;
+    }
+
+    p {
+      margin: 0 0 24px;
+      color: #5a6673;
+    }
+
+    form,
+    .reservations {
+      background: #fff;
+      border: 1px solid #dce5df;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(31, 45, 35, .06);
+    }
+
+    form {
+      display: grid;
+      gap: 16px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #c7d4cc;
+      border-radius: 6px;
+      padding: 11px 12px;
+      font: inherit;
+      background: #fbfdfc;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    button {
+      width: fit-content;
+      border: 0;
+      border-radius: 6px;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: 800;
+      color: #fff;
+      background: #146b43;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      color: #2f3b35;
+      background: #e8efeb;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .reservations {
+      margin-top: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #edf2ef;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #647168;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: #e8efeb;
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .message {
+      min-height: 22px;
+      color: #146b43;
+      font-weight: 700;
+    }
+
+    .error {
+      color: #b42318;
+      font-size: 12px;
+      max-width: 240px;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Reservas de golf</h1>
+    <p>Indicá cuándo querés jugar, a qué hora buscar cancha y cuándo querés que el agente ejecute la reserva.</p>
+
+    <form id="reservation-form">
+      <div class="grid">
+        <label>
+          Día que voy a jugar
+          <input name="playDate" type="date" required>
+        </label>
+        <label>
+          Fecha de ejecución
+          <input name="runDate" type="date" required>
+        </label>
+      </div>
+
+      <div class="grid">
+        <label>
+          Hora de ejecución
+          <input name="runTime" type="time" required>
+        </label>
+        <label>
+          Opción/lugar de reserva
+          <input name="bookingText" value="practica deportiva feriado">
+        </label>
+      </div>
+
+      <label>
+        Matrículas y DNI (hasta 4)
+        <textarea name="memberIds" placeholder="Una línea por jugador: matrícula DNI" required>135890
+105581 16763366
+138121 40388889
+130742 39770573</textarea>
+      </label>
+
+      <div class="grid">
+        <label>
+          Desde
+          <input name="timeWindowStart" type="time" value="12:30" required>
+        </label>
+        <label>
+          Hasta
+          <input name="timeWindowEnd" type="time" value="14:30" required>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button type="submit">Guardar solicitud</button>
+        <button class="secondary" id="run-now" type="button">Generar solicitud ahora</button>
+      </div>
+      <div class="message" id="message"></div>
+    </form>
+
+    <section class="reservations">
+      <button class="secondary" id="refresh" type="button">Actualizar</button>
+      <table>
+        <thead>
+          <tr>
+            <th>Juego</th>
+            <th>Ejecución</th>
+            <th>Jugadores</th>
+            <th>Horario</th>
+            <th>Estado</th>
+            <th>Último error</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="reservations"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector("#reservation-form");
+    const tbody = document.querySelector("#reservations");
+    const message = document.querySelector("#message");
+    const runNowButton = document.querySelector("#run-now");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await createReservation("/api/reservations", "Guardado");
+    });
+
+    runNowButton.addEventListener("click", async () => {
+      await createReservation("/api/reservations/run-now", "Solicitud creada y ejecutándose ahora");
+    });
+
+    async function createReservation(url, successPrefix) {
+      setBusy(true);
+      const data = Object.fromEntries(new FormData(form).entries());
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      const payload = await response.json();
+      setBusy(false);
+      if (!response.ok) {
+        message.textContent = payload.error || "No se pudo guardar.";
+        return;
+      }
+      message.textContent = `${successPrefix}. Se intentará reservar el ${formatRunAt(payload)}.`;
+      form.reset();
+      setDefaultRunAt();
+      form.timeWindowStart.value = "12:30";
+      form.timeWindowEnd.value = "14:30";
+      form.bookingText.value = "practica deportiva feriado";
+      await loadReservations();
+    }
+
+    document.querySelector("#refresh").addEventListener("click", loadReservations);
+
+    async function loadReservations() {
+      const response = await fetch("/api/reservations");
+      const reservations = await response.json();
+      tbody.innerHTML = reservations.map((reservation) => `
+        <tr>
+          <td>${escapeHtml(reservation.playDate)}</td>
+          <td>${escapeHtml(formatRunAt(reservation))}</td>
+          <td>${escapeHtml(formatPlayers(reservation))}</td>
+          <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
+          <td><span class="status">${escapeHtml(reservation.status)}</span></td>
+          <td class="error">${escapeHtml(reservation.lastError || "")}</td>
+          <td>
+            <div class="actions">
+              <button class="secondary" type="button" data-run="${escapeHtml(reservation.id)}">Intentar ahora</button>
+              <button class="secondary" type="button" data-delete="${escapeHtml(reservation.id)}">Borrar</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    tbody.addEventListener("click", async (event) => {
+      const deleteId = event.target.dataset.delete;
+      const runId = event.target.dataset.run;
+      if (runId) {
+        await fetch(`/api/reservations/${encodeURIComponent(runId)}/run-now`, { method: "POST" });
+        await loadReservations();
+        return;
+      }
+      if (!deleteId) return;
+      await fetch(`/api/reservations/${encodeURIComponent(deleteId)}`, { method: "DELETE" });
+      await loadReservations();
+    });
+
+    function setBusy(isBusy) {
+      form.querySelectorAll("button").forEach((button) => {
+        button.disabled = isBusy;
+      });
+      message.textContent = isBusy ? "Procesando..." : "";
+    }
+
+    function formatPlayers(reservation) {
+      if (Array.isArray(reservation.playerData) && reservation.playerData.length) {
+        return reservation.playerData
+          .map((player) => [player.memberId, player.documentId].filter(Boolean).join(" / "))
+          .join(", ");
+      }
+      return reservation.memberIds.join(", ");
+    }
+
+    function formatRunAt(reservation) {
+      if (reservation.runDate && reservation.runTime) return `${reservation.runDate} ${reservation.runTime}`;
+      if (reservation.runAtLocal) return reservation.runAtLocal.replace("T", " ").slice(0, 16);
+      if (reservation.bookingOpenDate) return `${reservation.bookingOpenDate} 08:00`;
+      return "";
+    }
+
+    function setDefaultRunAt() {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 60);
+      form.runDate.value = toDateValue(now);
+      form.runTime.value = toTimeValue(now);
+    }
+
+    function toDateValue(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
+
+    function toTimeValue(date) {
+      return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    setDefaultRunAt();
+    loadReservations();
+    setInterval(loadReservations, 5000);
+  </script>
+</body>
+</html>
