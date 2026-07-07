@@ -137,7 +137,7 @@ async function waitForScheduleReady() {
 }
 
 async function clickSlot(slot) {
-  const pointNames = ["centro", "acción derecha", "doble click centro"];
+  const pointNames = ["centro", "acción derecha", "botón interno", "dom click", "doble click centro"];
 
   for (let attempt = 1; attempt <= pointNames.length; attempt += 1) {
     await closeFloatingChatIfVisible();
@@ -146,8 +146,26 @@ async function clickSlot(slot) {
     const box = await slot.boundingBox().catch(() => null);
     if (!box) continue;
 
+    const topBefore = await topHitInfo(slot);
+    console.log(`Intento abrir turno (${pointNames[attempt - 1]}): ${JSON.stringify(topBefore)}`);
+
+    if (attempt === 3 && await clickInnerSlotAction(slot)) {
+      await page.waitForTimeout(900);
+      if (await reservationPanelIsOpen()) return;
+      console.log(`Click en turno sin cartel visible (${pointNames[attempt - 1]}).`);
+      continue;
+    }
+
+    if (attempt === 4) {
+      await dispatchSlotClick(slot);
+      await page.waitForTimeout(900);
+      if (await reservationPanelIsOpen()) return;
+      console.log(`Click en turno sin cartel visible (${pointNames[attempt - 1]}).`);
+      continue;
+    }
+
     const useRightAction = attempt === 2;
-    const useDoubleClick = attempt === 3;
+    const useDoubleClick = attempt === 5;
     const x = useRightAction ? box.x + box.width - Math.min(18, box.width / 5) : box.x + box.width / 2;
     const y = box.y + box.height / 2;
     await page.mouse.move(x, y);
@@ -164,6 +182,37 @@ async function clickSlot(slot) {
   }
 
   throw new Error("Encontré un turno, pero no se abrió el cartel para reservarlo.");
+}
+
+async function clickInnerSlotAction(slot) {
+  const action = slot.locator("button, a, [role='button'], .bi-list, .bi-three-dots, i, svg").last();
+  if (!(await isVisible(action, 400))) return false;
+  await action.click({ force: true }).catch(() => {});
+  return true;
+}
+
+async function dispatchSlotClick(slot) {
+  await slot.evaluate((element) => {
+    const target = element.querySelector("button, a, [role='button'], i, svg") || element;
+    const rect = target.getBoundingClientRect();
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      view: window,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+    };
+    target.dispatchEvent(new PointerEvent("pointerover", init));
+    target.dispatchEvent(new PointerEvent("pointerenter", init));
+    target.dispatchEvent(new MouseEvent("mouseover", init));
+    target.dispatchEvent(new MouseEvent("mouseenter", init));
+    target.dispatchEvent(new PointerEvent("pointerdown", init));
+    target.dispatchEvent(new MouseEvent("mousedown", init));
+    target.dispatchEvent(new PointerEvent("pointerup", init));
+    target.dispatchEvent(new MouseEvent("mouseup", init));
+    target.dispatchEvent(new MouseEvent("click", init));
+  }).catch(() => {});
 }
 
 async function reservationPanelIsOpen() {
