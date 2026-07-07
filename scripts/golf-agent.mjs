@@ -83,6 +83,7 @@ async function runAgent() {
       if (!config.confirmBooking) {
         console.log("Turno encontrado. Dry run activo: no se confirmó la reserva.");
         console.log("Para confirmar, usar GOLF_CONFIRM_BOOKING=true.");
+        process.exitCode = 2;
         return;
       }
 

@@ -183,15 +183,22 @@ async function runReservationNowAsync(id) {
     flushProgress();
   });
   child.on("close", async (code) => {
+    const finalStatus = statusFromExitCode(code);
     await updateReservation(id, (current) => ({
       ...current,
       lastRunAt: new Date().toISOString(),
       lastStdout: trimLog(stdout),
       lastStderr: trimLog(stderr),
-      status: code === 0 ? "done" : "failed",
-      lastError: code === 0 ? null : trimLog(stderr || stdout || `Proceso terminó con código ${code}`),
+      status: finalStatus,
+      lastError: finalStatus === "failed" ? trimLog(stderr || stdout || `Proceso terminó con código ${code}`) : null,
     }));
   });
+}
+
+function statusFromExitCode(code) {
+  if (code === 0) return "done";
+  if (code === 2) return "dry_run";
+  return "failed";
 }
 
 async function runDueReservations() {

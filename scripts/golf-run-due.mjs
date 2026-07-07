@@ -27,23 +27,32 @@ for (const reservation of dueReservations) {
     stdio: ["ignore", "pipe", "pipe"],
   });
 
+  const finalStatus = statusFromExitCode(result.status);
   await updateReservation(reservation.id, (current) => ({
     ...current,
     lastStdout: trimLog(result.stdout),
     lastStderr: trimLog(result.stderr),
     lastRunAt: new Date().toISOString(),
-    status: result.status === 0 ? "done" : "failed",
-    lastError: result.status === 0
-      ? null
-      : trimLog(result.stderr || result.stdout || `Proceso terminó con código ${result.status}`),
+    status: finalStatus,
+    lastError: finalStatus === "failed"
+      ? trimLog(result.stderr || result.stdout || `Proceso terminó con código ${result.status}`)
+      : null,
   }));
 
   if (result.status === 0) {
     console.log(`Reserva ${reservation.id} completada.`);
+  } else if (result.status === 2) {
+    console.log(`Reserva ${reservation.id} quedó en modo prueba; no se confirmó.`);
   } else {
     console.error(`Reserva ${reservation.id} falló.`);
     console.error(result.stderr || result.stdout || `Proceso terminó con código ${result.status}`);
   }
+}
+
+function statusFromExitCode(code) {
+  if (code === 0) return "done";
+  if (code === 2) return "dry_run";
+  return "failed";
 }
 
 function reservationEnv(reservation) {
