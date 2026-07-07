@@ -26,7 +26,9 @@ const config = {
   pollSeconds: Number(env("GOLF_POLL_SECONDS", "15")),
   maxAttempts: Number(env("GOLF_MAX_ATTEMPTS", "1")),
   outputDir: env("GOLF_OUTPUT_DIR", "outputs/golf-agent"),
-  settleSeconds: Number(env("GOLF_RESERVATION_SETTLE_SECONDS", "75")),
+  settleSeconds: Number(env("GOLF_RESERVATION_SETTLE_SECONDS", "180")),
+  baseReservationSeconds: Number(env("GOLF_BASE_RESERVATION_SECONDS", "180")),
+  transitionSeconds: Number(env("GOLF_RESERVATION_TRANSITION_SECONDS", "45")),
 };
 
 fs.mkdirSync(config.outputDir, { recursive: true });
@@ -299,7 +301,7 @@ async function fillOneMemberValue(value, field) {
 
 async function waitForBaseReservation() {
   console.log("Esperando que Golf Tracker cree la reserva base.");
-  const deadline = Date.now() + 45000;
+  const deadline = Date.now() + config.baseReservationSeconds * 1000;
 
   while (Date.now() < deadline) {
     await closeFloatingChatIfVisible();
@@ -333,7 +335,7 @@ async function waitForBaseReservation() {
     await page.waitForTimeout(800);
   }
 
-  throw new Error("El sitio quedó esperando la creación de la reserva base y no apareció la opción para agregar jugadores.");
+  throw new Error(`El sitio quedó esperando la creación de la reserva base por más de ${config.baseReservationSeconds} segundos y no apareció la opción para agregar jugadores.`);
 }
 
 async function verifyPlayer(player) {
@@ -422,7 +424,7 @@ async function waitForFinalReservationCompletion() {
 }
 
 async function waitForReservationTransitionStart(label) {
-  const deadline = Date.now() + 15000;
+  const deadline = Date.now() + config.transitionSeconds * 1000;
 
   while (Date.now() < deadline) {
     const reservingCount = await reservingTextCount();
@@ -440,7 +442,7 @@ async function waitForReservationTransitionStart(label) {
     return;
   }
 
-  console.log(`No vi aparecer Reservando para ${label}; sigo esperando el siguiente estado.`);
+  console.log(`No vi aparecer Reservando para ${label} en ${config.transitionSeconds} segundos; sigo esperando el siguiente estado.`);
 }
 
 async function reservingTextCount() {
