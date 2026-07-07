@@ -22,7 +22,7 @@ const config = {
   allowedTargetDays: parseAllowedDays(env("GOLF_ALLOWED_TARGET_DAYS", "0,1,2,3,4,5,6")),
   enforceAllowedDays: booleanEnv("GOLF_ENFORCE_ALLOWED_DAYS", false),
   confirmBooking: booleanEnv("GOLF_CONFIRM_BOOKING", false),
-  headless: booleanEnv("GOLF_HEADLESS", false),
+  headless: booleanEnv("GOLF_HEADLESS", true),
   pollSeconds: Number(env("GOLF_POLL_SECONDS", "15")),
   maxAttempts: Number(env("GOLF_MAX_ATTEMPTS", "1")),
   outputDir: env("GOLF_OUTPUT_DIR", "outputs/golf-agent"),
@@ -1043,7 +1043,7 @@ function env(name, fallback) {
 function booleanEnv(name, fallback) {
   const value = process.env[name];
   if (value === undefined) return fallback;
-  return ["1", "true", "yes", "si", "sí"].includes(value.toLowerCase());
+  return ["1", "true", "yes", "si", "sí"].includes(value.trim().replace(/^["']|["']$/g, "").toLowerCase());
 }
 
 function assertTargetDay() {
