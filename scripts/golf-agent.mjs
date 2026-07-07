@@ -26,9 +26,9 @@ const config = {
   pollSeconds: Number(env("GOLF_POLL_SECONDS", "15")),
   maxAttempts: Number(env("GOLF_MAX_ATTEMPTS", "1")),
   outputDir: env("GOLF_OUTPUT_DIR", "outputs/golf-agent"),
-  settleSeconds: Number(env("GOLF_RESERVATION_SETTLE_SECONDS", "180")),
-  baseReservationSeconds: Number(env("GOLF_BASE_RESERVATION_SECONDS", "180")),
-  transitionSeconds: Number(env("GOLF_RESERVATION_TRANSITION_SECONDS", "45")),
+  settleSeconds: Number(env("GOLF_RESERVATION_SETTLE_SECONDS", "240")),
+  baseReservationSeconds: Number(env("GOLF_BASE_RESERVATION_SECONDS", "240")),
+  transitionSeconds: Number(env("GOLF_RESERVATION_TRANSITION_SECONDS", "90")),
 };
 
 fs.mkdirSync(config.outputDir, { recursive: true });
@@ -265,7 +265,7 @@ async function addLinePlayersIfNeeded() {
 
     await fillPlayerData(player, fields);
     await verifyPlayer(player);
-    await reserveAddedPlayer(player);
+    await reserveAddedPlayer(player, { isLast });
 
     if (!isLast) {
       await waitForAddedPlayerReadyForNext(player);
@@ -355,7 +355,7 @@ async function verifyPlayer(player) {
   await page.waitForTimeout(1200);
 }
 
-async function reserveAddedPlayer(player) {
+async function reserveAddedPlayer(player, options = {}) {
   const reserve = await waitForReservationButton(8000);
   if (!reserve) {
     throw new Error(`Verifiqué/cargué la matrícula ${player.memberId}, pero no encontré el botón Reservar.`);
@@ -364,7 +364,7 @@ async function reserveAddedPlayer(player) {
   console.log(`Reservando jugador ${player.memberId}.`);
   await reserve.click({ force: true });
   await page.waitForLoadState("networkidle").catch(() => {});
-  await waitForReservationTransitionStart(player.memberId);
+  await waitForReservationTransitionStart(player.memberId, { requireProcessing: Boolean(options.isLast) });
 }
 
 async function waitForAddedPlayerReadyForNext(player) {
@@ -389,13 +389,11 @@ async function waitForAddedPlayerReadyForNext(player) {
 async function waitForFinalReservationCompletion() {
   console.log("Esperando confirmación final de la línea completa.");
   const deadline = Date.now() + config.settleSeconds * 1000;
-  let sawReserving = false;
   let clearSince = 0;
 
   while (Date.now() < deadline) {
     const reservingCount = await reservingTextCount();
     if (reservingCount) {
-      sawReserving = true;
       clearSince = 0;
       await page.waitForTimeout(1200);
       continue;
@@ -403,17 +401,8 @@ async function waitForFinalReservationCompletion() {
 
     if (!clearSince) clearSince = Date.now();
 
-    // El texto puede aparecer con demora después del click final. Si todavía no
-    // lo vimos, damos una ventana inicial antes de considerar la línea cerrada.
-    if (!sawReserving && Date.now() - clearSince < 12000) {
-      await page.waitForTimeout(1000);
-      continue;
-    }
-
     if (Date.now() - clearSince >= 5000) {
-      console.log(sawReserving
-        ? "Reservando desapareció de forma estable; reserva finalizada."
-        : "No apareció Reservando dentro de la ventana inicial; continúo con la pantalla estable.");
+      console.log("Reservando desapareció de forma estable; reserva finalizada.");
       return;
     }
 
@@ -423,26 +412,31 @@ async function waitForFinalReservationCompletion() {
   throw new Error(`La línea quedó en "Reservando..." o sin estabilizar por más de ${config.settleSeconds} segundos; no marco la solicitud como completada.`);
 }
 
-async function waitForReservationTransitionStart(label) {
+async function waitForReservationTransitionStart(label, options = {}) {
   const deadline = Date.now() + config.transitionSeconds * 1000;
 
   while (Date.now() < deadline) {
     const reservingCount = await reservingTextCount();
     if (!reservingCount) {
-      const addPlayers = await waitForAddPlayersButton(500);
+      const addPlayers = options.requireProcessing ? null : await waitForAddPlayersButton(500);
       if (addPlayers) {
         console.log(`Golf Tracker ya permite agregar otro jugador después de ${label}.`);
-        return;
+        return "next";
       }
       await page.waitForTimeout(700);
       continue;
     }
 
     console.log(`Golf Tracker empezó a procesar la reserva de ${label}.`);
-    return;
+    return "reserving";
+  }
+
+  if (options.requireProcessing) {
+    throw new Error(`No vi a Golf Tracker empezar a procesar la reserva de ${label} en ${config.transitionSeconds} segundos.`);
   }
 
   console.log(`No vi aparecer Reservando para ${label} en ${config.transitionSeconds} segundos; sigo esperando el siguiente estado.`);
+  return "timeout";
 }
 
 async function reservingTextCount() {

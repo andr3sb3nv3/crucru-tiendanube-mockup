@@ -224,7 +224,7 @@
             <th>Jugadores</th>
             <th>Horario</th>
             <th>Estado</th>
-            <th>Último error</th>
+            <th>Último paso</th>
             <th></th>
           </tr>
         </thead>
@@ -283,7 +283,7 @@
           <td>${escapeHtml(formatPlayers(reservation))}</td>
           <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
           <td><span class="status">${escapeHtml(reservation.status)}</span></td>
-          <td class="error">${escapeHtml(reservation.lastError || "")}</td>
+          <td class="error">${escapeHtml(formatLastStatus(reservation))}</td>
           <td>
             <div class="actions">
               <button class="secondary" type="button" data-run="${escapeHtml(reservation.id)}">Intentar ahora</button>
@@ -328,6 +328,17 @@
       if (reservation.runAtLocal) return reservation.runAtLocal.replace("T", " ").slice(0, 16);
       if (reservation.bookingOpenDate) return `${reservation.bookingOpenDate} 08:00`;
       return "";
+    }
+
+    function formatLastStatus(reservation) {
+      if (reservation.lastError) return reservation.lastError;
+      const log = [reservation.lastStderr, reservation.lastStdout].filter(Boolean).join("\n");
+      const lines = log
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .filter((line) => !line.startsWith(">"));
+      return lines.at(-1) || "";
     }
 
     function setDefaultRunAt() {

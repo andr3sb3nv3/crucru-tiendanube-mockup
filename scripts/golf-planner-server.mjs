@@ -50,6 +50,8 @@ const server = http.createServer(async (request, response) => {
       reservation.status = "running";
       reservation.runMode = "manual";
       reservation.lastRunAt = new Date().toISOString();
+      reservation.lastStdout = "Solicitud manual recibida. Iniciando agente...\n";
+      reservation.lastStderr = "";
       await insertReservation(reservation);
       runReservationNow(reservation.id);
       return json(response, reservation, 202);
@@ -67,6 +69,8 @@ const server = http.createServer(async (request, response) => {
         runMode: "manual",
         lastRunAt: new Date().toISOString(),
         lastError: null,
+        lastStdout: "Reintento manual recibido. Iniciando agente...\n",
+        lastStderr: "",
       }));
       runReservationNow(reservation.id);
       return json(response, reservation, 202);
@@ -155,12 +159,28 @@ async function runReservationNowAsync(id) {
 
   let stdout = "";
   let stderr = "";
+  let lastProgressFlushAt = 0;
+
+  const flushProgress = async () => {
+    const now = Date.now();
+    if (now - lastProgressFlushAt < 2000) return;
+    lastProgressFlushAt = now;
+    await updateReservation(id, (current) => ({
+      ...current,
+      lastStdout: trimLog(stdout),
+      lastStderr: trimLog(stderr),
+      status: current.status === "running" ? "running" : current.status,
+      lastRunAt: current.lastRunAt || new Date().toISOString(),
+    })).catch(() => {});
+  };
 
   child.stdout.on("data", (chunk) => {
     stdout += chunk.toString();
+    flushProgress();
   });
   child.stderr.on("data", (chunk) => {
     stderr += chunk.toString();
+    flushProgress();
   });
   child.on("close", async (code) => {
     await updateReservation(id, (current) => ({
@@ -197,9 +217,9 @@ function reservationEnv(reservation) {
     GOLF_HEADLESS: process.env.GOLF_HEADLESS || "true",
     GOLF_MAX_ATTEMPTS: process.env.GOLF_MANUAL_MAX_ATTEMPTS || "1",
     GOLF_POLL_SECONDS: process.env.GOLF_MANUAL_POLL_SECONDS || "2",
-    GOLF_RESERVATION_SETTLE_SECONDS: process.env.GOLF_RESERVATION_SETTLE_SECONDS || "180",
-    GOLF_BASE_RESERVATION_SECONDS: process.env.GOLF_BASE_RESERVATION_SECONDS || "180",
-    GOLF_RESERVATION_TRANSITION_SECONDS: process.env.GOLF_RESERVATION_TRANSITION_SECONDS || "45",
+    GOLF_RESERVATION_SETTLE_SECONDS: process.env.GOLF_RESERVATION_SETTLE_SECONDS || "240",
+    GOLF_BASE_RESERVATION_SECONDS: process.env.GOLF_BASE_RESERVATION_SECONDS || "240",
+    GOLF_RESERVATION_TRANSITION_SECONDS: process.env.GOLF_RESERVATION_TRANSITION_SECONDS || "90",
   };
 }
 
