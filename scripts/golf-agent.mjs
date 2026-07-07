@@ -362,7 +362,7 @@ async function reserveAddedPlayer(player) {
   console.log(`Reservando jugador ${player.memberId}.`);
   await reserve.click({ force: true });
   await page.waitForLoadState("networkidle").catch(() => {});
-  await page.waitForTimeout(1500);
+  await waitForReservationTransitionStart(player.memberId);
 }
 
 async function waitForAddedPlayerReadyForNext(player) {
@@ -387,21 +387,60 @@ async function waitForAddedPlayerReadyForNext(player) {
 async function waitForFinalReservationCompletion() {
   console.log("Esperando confirmación final de la línea completa.");
   const deadline = Date.now() + config.settleSeconds * 1000;
+  let sawReserving = false;
+  let clearSince = 0;
+
+  while (Date.now() < deadline) {
+    const reservingCount = await reservingTextCount();
+    if (reservingCount) {
+      sawReserving = true;
+      clearSince = 0;
+      await page.waitForTimeout(1200);
+      continue;
+    }
+
+    if (!clearSince) clearSince = Date.now();
+
+    // El texto puede aparecer con demora después del click final. Si todavía no
+    // lo vimos, damos una ventana inicial antes de considerar la línea cerrada.
+    if (!sawReserving && Date.now() - clearSince < 12000) {
+      await page.waitForTimeout(1000);
+      continue;
+    }
+
+    if (Date.now() - clearSince >= 5000) {
+      console.log(sawReserving
+        ? "Reservando desapareció de forma estable; reserva finalizada."
+        : "No apareció Reservando dentro de la ventana inicial; continúo con la pantalla estable.");
+      return;
+    }
+
+    await page.waitForTimeout(1000);
+  }
+
+  throw new Error(`La línea quedó en "Reservando..." o sin estabilizar por más de ${config.settleSeconds} segundos; no marco la solicitud como completada.`);
+}
+
+async function waitForReservationTransitionStart(label) {
+  const deadline = Date.now() + 15000;
 
   while (Date.now() < deadline) {
     const reservingCount = await reservingTextCount();
     if (!reservingCount) {
-      await page.waitForTimeout(1200);
-      if (!(await reservingTextCount())) {
-        console.log("La pantalla ya no muestra Reservando; reserva finalizada.");
+      const addPlayers = await waitForAddPlayersButton(500);
+      if (addPlayers) {
+        console.log(`Golf Tracker ya permite agregar otro jugador después de ${label}.`);
         return;
       }
+      await page.waitForTimeout(700);
+      continue;
     }
 
-    await page.waitForTimeout(1200);
+    console.log(`Golf Tracker empezó a procesar la reserva de ${label}.`);
+    return;
   }
 
-  throw new Error(`La línea quedó en "Reservando..." por más de ${config.settleSeconds} segundos; no marco la solicitud como completada.`);
+  console.log(`No vi aparecer Reservando para ${label}; sigo esperando el siguiente estado.`);
 }
 
 async function reservingTextCount() {
