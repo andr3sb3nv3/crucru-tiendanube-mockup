@@ -60,6 +60,7 @@ function reservationEnv(reservation) {
     GOLF_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.GOLF_TIME_WINDOW_END || "14:30",
     GOLF_CONFIRM_BOOKING: process.env.GOLF_CONFIRM_BOOKING || "true",
     GOLF_HEADLESS: process.env.GOLF_HEADLESS || "true",
+    GOLF_RESERVATION_SETTLE_SECONDS: process.env.GOLF_RESERVATION_SETTLE_SECONDS || "75",
   };
 }
 

@@ -197,6 +197,7 @@ function reservationEnv(reservation) {
     GOLF_HEADLESS: process.env.GOLF_HEADLESS || "true",
     GOLF_MAX_ATTEMPTS: process.env.GOLF_MANUAL_MAX_ATTEMPTS || "1",
     GOLF_POLL_SECONDS: process.env.GOLF_MANUAL_POLL_SECONDS || "2",
+    GOLF_RESERVATION_SETTLE_SECONDS: process.env.GOLF_RESERVATION_SETTLE_SECONDS || "75",
   };
 }
 
