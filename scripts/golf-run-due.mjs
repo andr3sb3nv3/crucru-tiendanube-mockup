@@ -15,6 +15,19 @@ const targets = {
   },
   "jockey-palermo": {
     script: "scripts/jockey-agent.mjs",
+    siteName: "JOCKEY",
+    siteUrl: () => process.env.JOCKEY_URL || "https://golf.e-jockeyclub.org.ar/golf/login.php",
+    defaultBookingText: () => process.env.JOCKEY_TOURNAMENT_TEXT || "AZUL",
+    username: () => process.env.JOCKEY_USERNAME,
+    password: () => process.env.JOCKEY_PASSWORD,
+  },
+  "club-newman": {
+    script: "scripts/jockey-agent.mjs",
+    siteName: "NEWMAN",
+    siteUrl: () => process.env.NEWMAN_URL || "https://www.clubnewmangolf.com/golf/login.php",
+    defaultBookingText: () => process.env.NEWMAN_TOURNAMENT_TEXT || "",
+    username: () => process.env.NEWMAN_USERNAME || process.env.JOCKEY_USERNAME,
+    password: () => process.env.NEWMAN_PASSWORD || process.env.JOCKEY_PASSWORD,
   },
 };
 
@@ -65,7 +78,7 @@ function statusFromExitCode(code) {
 }
 
 function reservationEnv(reservation) {
-  if (normalizeTarget(reservation.target) === "jockey-palermo") return jockeyReservationEnv(reservation);
+  if (usesJockeyLikeAgent(reservation.target)) return jockeyReservationEnv(reservation);
 
   return {
     ...process.env,
@@ -87,24 +100,27 @@ function reservationEnv(reservation) {
 }
 
 function jockeyReservationEnv(reservation) {
+  const target = targets[normalizeTarget(reservation.target)];
   const memberIds = reservation.memberIds || [];
   const firstMemberId = memberIds[0] || "";
-  const username = process.env.JOCKEY_USERNAME || firstMemberId;
+  const username = target.username() || firstMemberId;
   return {
     ...process.env,
+    JOCKEY_URL: target.siteUrl(),
+    JOCKEY_SITE_NAME: target.siteName,
     JOCKEY_DATE: reservation.playDate,
     JOCKEY_MEMBER_IDS: memberIds.join(","),
     JOCKEY_PLAYERS_DATA: JSON.stringify(
       reservation.playerData || memberIds.map((memberId) => ({ memberId, documentId: "" })),
     ),
     JOCKEY_PLAYERS: String(reservation.players || memberIds.length),
-    JOCKEY_TOURNAMENT_TEXT: reservation.bookingText || process.env.JOCKEY_TOURNAMENT_TEXT || "AZUL",
+    JOCKEY_TOURNAMENT_TEXT: reservation.bookingText || target.defaultBookingText(),
     JOCKEY_TIME_WINDOW_START: reservation.timeWindowStart || process.env.JOCKEY_TIME_WINDOW_START || "12:30",
     JOCKEY_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.JOCKEY_TIME_WINDOW_END || "14:30",
     JOCKEY_CONFIRM_BOOKING: process.env.JOCKEY_CONFIRM_BOOKING || "false",
     JOCKEY_HEADLESS: process.env.JOCKEY_HEADLESS || process.env.GOLF_HEADLESS || "true",
     JOCKEY_USERNAME: username,
-    JOCKEY_PASSWORD: process.env.JOCKEY_PASSWORD || username,
+    JOCKEY_PASSWORD: target.password() || username,
   };
 }
 
@@ -115,6 +131,10 @@ function agentScriptFor(reservation) {
 function normalizeTarget(value) {
   const target = String(value || "golf-tracker").trim().toLowerCase();
   return targets[target] ? target : "golf-tracker";
+}
+
+function usesJockeyLikeAgent(target) {
+  return ["jockey-palermo", "club-newman"].includes(normalizeTarget(target));
 }
 
 function reservationIsDue(reservation, at) {

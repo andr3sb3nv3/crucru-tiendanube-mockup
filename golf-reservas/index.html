@@ -218,6 +218,7 @@
       <div class="target-switch" aria-label="Cancha">
         <button class="active" id="target-golf-tracker" type="button">Golf Tracker</button>
         <button id="target-jockey-palermo" type="button">Jockey Club</button>
+        <button id="target-club-newman" type="button">Club Newman</button>
       </div>
 
       <div class="grid">
@@ -297,6 +298,7 @@
     const developmentButton = document.querySelector("#mode-development");
     const golfTrackerButton = document.querySelector("#target-golf-tracker");
     const jockeyPalermoButton = document.querySelector("#target-jockey-palermo");
+    const clubNewmanButton = document.querySelector("#target-club-newman");
     const runDateField = document.querySelector("#run-date-field");
     const runTimeField = document.querySelector("#run-time-field");
     const executionHint = document.querySelector("#execution-hint");
@@ -309,6 +311,12 @@
       },
       "jockey-palermo": {
         bookingText: "AZUL",
+        memberIds: "135890",
+        timeWindowStart: "12:30",
+        timeWindowEnd: "14:30"
+      },
+      "club-newman": {
+        bookingText: "",
         memberIds: "135890",
         timeWindowStart: "12:30",
         timeWindowEnd: "14:30"
@@ -330,6 +338,7 @@
     developmentButton.addEventListener("click", () => setMode("development"));
     golfTrackerButton.addEventListener("click", () => setTarget("golf-tracker"));
     jockeyPalermoButton.addEventListener("click", () => setTarget("jockey-palermo"));
+    clubNewmanButton.addEventListener("click", () => setTarget("club-newman"));
     form.playDate.addEventListener("change", syncExecutionFields);
 
     async function createReservation(url, successPrefix) {
@@ -433,6 +442,7 @@
     }
 
     function formatTarget(target) {
+      if (target === "club-newman") return "Club Newman";
       return target === "jockey-palermo" ? "Jockey Club" : "Golf Tracker";
     }
 
@@ -477,8 +487,10 @@
     function setTarget(target) {
       form.target.value = target;
       const isJockey = target === "jockey-palermo";
-      golfTrackerButton.classList.toggle("active", !isJockey);
+      const isNewman = target === "club-newman";
+      golfTrackerButton.classList.toggle("active", !isJockey && !isNewman);
       jockeyPalermoButton.classList.toggle("active", isJockey);
+      clubNewmanButton.classList.toggle("active", isNewman);
 
       const defaults = targetDefaults[target] || targetDefaults["golf-tracker"];
       form.bookingText.value = defaults.bookingText;
@@ -507,7 +519,7 @@
 
     function productionRunAt(playDate, target) {
       const date = dateFromValue(playDate);
-      date.setDate(date.getDate() - (target === "jockey-palermo" ? 2 : 3));
+      date.setDate(date.getDate() - (target === "jockey-palermo" || target === "club-newman" ? 2 : 3));
       return { date: toDateValue(date), time: "08:00" };
     }
 

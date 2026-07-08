@@ -61,6 +61,9 @@ JOCKEY_PASSWORD=...
 JOCKEY_TOURNAMENT_TEXT=AZUL
 JOCKEY_CONFIRM_BOOKING=false
 JOCKEY_HEADLESS=true
+
+NEWMAN_URL=https://www.clubnewmangolf.com/golf/login.php
+NEWMAN_ADVANCE_DAYS=2
 ```
 
 En el servicio web, dejar:

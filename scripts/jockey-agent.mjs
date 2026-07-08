@@ -8,6 +8,7 @@ loadEnvFile(".env.golf");
 
 const players = parsePlayers();
 const config = {
+  siteName: env("JOCKEY_SITE_NAME", "JOCKEY"),
   url: env("JOCKEY_URL", "https://golf.e-jockeyclub.org.ar/golf/login.php"),
   username: env("JOCKEY_USERNAME", players[0]?.memberId || ""),
   password: env("JOCKEY_PASSWORD", env("JOCKEY_USERNAME", players[0]?.memberId || "")),
@@ -20,13 +21,13 @@ const config = {
   outputDir: env("JOCKEY_OUTPUT_DIR", "outputs/jockey-agent"),
 };
 
-if (!players.length) throw new Error("JOCKEY: cargá al menos una matrícula para reservar.");
-if (players.length > 4) throw new Error("JOCKEY: cargá hasta 4 matrículas para una misma línea.");
-if (!config.username) throw new Error("JOCKEY: falta JOCKEY_USERNAME o una primera matrícula.");
-if (!config.password) throw new Error("JOCKEY: falta JOCKEY_PASSWORD.");
-if (!/^\d{4}-\d{2}-\d{2}$/.test(config.date)) throw new Error("JOCKEY: JOCKEY_DATE debe tener formato YYYY-MM-DD.");
+if (!players.length) throw new Error(`${config.siteName}: cargá al menos una matrícula para reservar.`);
+if (players.length > 4) throw new Error(`${config.siteName}: cargá hasta 4 matrículas para una misma línea.`);
+if (!config.username) throw new Error(`${config.siteName}: falta JOCKEY_USERNAME o una primera matrícula.`);
+if (!config.password) throw new Error(`${config.siteName}: falta JOCKEY_PASSWORD.`);
+if (!/^\d{4}-\d{2}-\d{2}$/.test(config.date)) throw new Error(`${config.siteName}: JOCKEY_DATE debe tener formato YYYY-MM-DD.`);
 if (!isTime(config.timeWindowStart) || !isTime(config.timeWindowEnd)) {
-  throw new Error("JOCKEY: el rango horario debe tener formato HH:mm.");
+  throw new Error(`${config.siteName}: el rango horario debe tener formato HH:mm.`);
 }
 
 let lastDialogMessage = "";
@@ -77,7 +78,7 @@ async function main() {
 }
 
 async function login(page) {
-  log("Abro login del Jockey.");
+  log(`Abro login de ${config.siteName}.`);
   await page.goto(config.url, { waitUntil: "domcontentloaded" });
   await snapshot(page, "login");
 
@@ -92,7 +93,7 @@ async function login(page) {
   const body = await bodyText(page);
   if (/Número de Matrícula|Clave:|Ingresar/i.test(body) && !/Inicio/i.test(body)) {
     await snapshot(page, "login-error");
-    throw new Error("JOCKEY: no pude iniciar sesión. Revisá usuario y contraseña.");
+    throw new Error(`${config.siteName}: no pude iniciar sesión. Revisá usuario y contraseña.`);
   }
   log("Sesión iniciada.");
 }
@@ -128,7 +129,7 @@ async function selectTournament(page) {
   const byDate = tournaments.filter((item) => item.date === targetDate && item.open && !item.requestOnly);
   if (!byDate.length) {
     const available = tournaments.map((item) => `${item.date || "s/f"} - ${item.text}`).join("\n");
-    throw new Error(`JOCKEY: no encontré torneo abierto para ${targetDate}. Disponibles:\n${available}`);
+    throw new Error(`${config.siteName}: no encontré torneo abierto para ${targetDate}. Disponibles:\n${available}`);
   }
 
   const preference = normalizeText(config.tournamentText);
@@ -195,7 +196,7 @@ async function selectSlot(page, playerCount) {
   const candidates = inWindow.length ? inWindow : enoughSpace;
   if (!candidates.length) {
     const summary = slots.map((slot) => `${slot.time} hoyo ${slot.hole}: ${slot.free} libres`).join("\n");
-    throw new Error(`JOCKEY: no encontré una línea con ${playerCount} espacios libres. Líneas con algún lugar:\n${summary}`);
+    throw new Error(`${config.siteName}: no encontré una línea con ${playerCount} espacios libres. Líneas con algún lugar:\n${summary}`);
   }
 
   candidates.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time) || Number(a.hole) - Number(b.hole));
@@ -235,7 +236,7 @@ async function openSlot(page, slot) {
   await page.waitForSelector('input[name^="txtID"]');
   const formSlots = await availableFormSlots(page);
   if (formSlots.length < players.length) {
-    throw new Error(`JOCKEY: el formulario abrió con ${formSlots.length} espacios libres, pero necesito ${players.length}.`);
+    throw new Error(`${config.siteName}: el formulario abrió con ${formSlots.length} espacios libres, pero necesito ${players.length}.`);
   }
   log(`Formulario abierto. Espacios a completar: ${formSlots.map((slotNumber) => slotNumber).join(", ")}.`);
 }
@@ -264,7 +265,7 @@ async function fillPlayers(page, selectedPlayers) {
     }, slotNumber);
 
     if (!verified.id || !verified.name) {
-      throw new Error(`JOCKEY: no pude verificar la matrícula ${player.memberId}${lastDialogMessage ? ` (${lastDialogMessage})` : ""}.`);
+      throw new Error(`${config.siteName}: no pude verificar la matrícula ${player.memberId}${lastDialogMessage ? ` (${lastDialogMessage})` : ""}.`);
     }
     log(`Verificado: ${verified.id} - ${verified.name}.`);
     verifiedPlayers.push({ ...player, ...verified, slotNumber });
@@ -284,7 +285,7 @@ async function confirmReservation(page, slot, verifiedPlayers) {
   const body = await bodyText(page);
   if (/Tiempo para realizar la reserva/i.test(body)) {
     await snapshot(page, "confirmacion-pendiente");
-    throw new Error("JOCKEY: el sitio siguió en el formulario después de confirmar. Revisá la última captura.");
+    throw new Error(`${config.siteName}: el sitio siguió en el formulario después de confirmar. Revisá la última captura.`);
   }
 
   await assertPlayersInFinalGrid(page, slot, verifiedPlayers);
@@ -309,7 +310,7 @@ async function assertPlayersInFinalGrid(page, slot, verifiedPlayers) {
 
   if (!finalLine) {
     await snapshot(page, "linea-final-no-encontrada");
-    throw new Error(`JOCKEY: confirmé, pero no encontré la línea ${slot.time} hoyo ${slot.hole} para validar.`);
+    throw new Error(`${config.siteName}: confirmé, pero no encontré la línea ${slot.time} hoyo ${slot.hole} para validar.`);
   }
 
   const finalText = normalizeText(finalLine.players.join(" "));
@@ -324,7 +325,7 @@ async function assertPlayersInFinalGrid(page, slot, verifiedPlayers) {
   log(`Línea final: ${finalLine.players.filter(Boolean).join(" | ")}`);
   if (missing.length) {
     await snapshot(page, "jugadores-faltantes");
-    throw new Error(`JOCKEY: la línea se confirmó, pero no encontré a: ${missing.map((player) => `${player.memberId} ${player.name || ""}`.trim()).join(", ")}.`);
+    throw new Error(`${config.siteName}: la línea se confirmó, pero no encontré a: ${missing.map((player) => `${player.memberId} ${player.name || ""}`.trim()).join(", ")}.`);
   }
 }
 
@@ -435,5 +436,5 @@ function normalizeText(value) {
 }
 
 function log(message) {
-  console.log(`JOCKEY: ${message}`);
+  console.log(`${config.siteName}: ${message}`);
 }
