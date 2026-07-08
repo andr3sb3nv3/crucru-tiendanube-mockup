@@ -77,6 +77,40 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .app-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .mode-switch {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid #dce5df;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .mode-switch button {
+      color: #2f3b35;
+      background: transparent;
+    }
+
+    .mode-switch button.active {
+      color: #fff;
+      background: #146b43;
+    }
+
+    .hint {
+      margin: -6px 0 0;
+      color: #647168;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
     button {
       width: fit-content;
       border: 0;
@@ -162,23 +196,33 @@
 </head>
 <body>
   <main>
-    <h1>Reservas de golf</h1>
-    <p>Indicá cuándo querés jugar, a qué hora buscar cancha y cuándo querés que el agente ejecute la reserva.</p>
+    <header class="app-header">
+      <div>
+        <h1>Reservas de golf</h1>
+        <p>Indicá cuándo querés jugar y a qué hora buscar cancha.</p>
+      </div>
+      <div class="mode-switch" aria-label="Modo de uso">
+        <button class="active" id="mode-production" type="button">Producción</button>
+        <button id="mode-development" type="button">Desarrollo</button>
+      </div>
+    </header>
 
     <form id="reservation-form">
+      <input name="mode" type="hidden" value="production">
+
       <div class="grid">
         <label>
           Día que voy a jugar
           <input name="playDate" type="date" required>
         </label>
-        <label>
+        <label id="run-date-field">
           Fecha de ejecución
           <input name="runDate" type="date" required>
         </label>
       </div>
 
       <div class="grid">
-        <label>
+        <label id="run-time-field">
           Hora de ejecución
           <input name="runTime" type="time" required>
         </label>
@@ -187,6 +231,7 @@
           <input name="bookingText" value="practica deportiva feriado">
         </label>
       </div>
+      <div class="hint" id="execution-hint"></div>
 
       <label>
         Matrículas y DNI (hasta 4)
@@ -238,15 +283,26 @@
     const tbody = document.querySelector("#reservations");
     const message = document.querySelector("#message");
     const runNowButton = document.querySelector("#run-now");
+    const productionButton = document.querySelector("#mode-production");
+    const developmentButton = document.querySelector("#mode-development");
+    const runDateField = document.querySelector("#run-date-field");
+    const runTimeField = document.querySelector("#run-time-field");
+    const executionHint = document.querySelector("#execution-hint");
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      syncExecutionFields();
       await createReservation("/api/reservations", "Guardado");
     });
 
     runNowButton.addEventListener("click", async () => {
+      syncExecutionFields();
       await createReservation("/api/reservations/run-now", "Solicitud creada y ejecutándose ahora");
     });
+
+    productionButton.addEventListener("click", () => setMode("production"));
+    developmentButton.addEventListener("click", () => setMode("development"));
+    form.playDate.addEventListener("change", syncExecutionFields);
 
     async function createReservation(url, successPrefix) {
       setBusy(true);
@@ -264,7 +320,7 @@
       }
       message.textContent = `${successPrefix}. Se intentará reservar el ${formatRunAt(payload)}.`;
       form.reset();
-      setDefaultRunAt();
+      setMode(form.mode.value || "production");
       form.timeWindowStart.value = "12:30";
       form.timeWindowEnd.value = "14:30";
       form.bookingText.value = "practica deportiva feriado";
@@ -278,7 +334,7 @@
       const reservations = await response.json();
       tbody.innerHTML = reservations.map((reservation) => `
         <tr>
-          <td>${escapeHtml(reservation.playDate)}</td>
+          <td>${escapeHtml(reservation.playDate)}${reservation.mode ? `<br>${escapeHtml(reservation.mode)}` : ""}</td>
           <td>${escapeHtml(formatRunAt(reservation))}</td>
           <td>${escapeHtml(formatPlayers(reservation))}</td>
           <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
@@ -348,6 +404,47 @@
       form.runTime.value = toTimeValue(now);
     }
 
+    function setMode(mode) {
+      form.mode.value = mode;
+      const isProduction = mode === "production";
+      productionButton.classList.toggle("active", isProduction);
+      developmentButton.classList.toggle("active", !isProduction);
+      runDateField.style.display = isProduction ? "none" : "grid";
+      runTimeField.style.display = isProduction ? "none" : "grid";
+      form.runDate.required = !isProduction;
+      form.runTime.required = !isProduction;
+      if (!isProduction && !form.runDate.value) setDefaultRunAt();
+      syncExecutionFields();
+    }
+
+    function syncExecutionFields() {
+      if (form.mode.value !== "production") {
+        executionHint.textContent = "Desarrollo: la solicitud se ejecuta en la fecha y hora manual indicadas.";
+        return;
+      }
+
+      if (!form.playDate.value) {
+        executionHint.textContent = "Producción: elegí el día de juego y se calculará la ejecución automática.";
+        return;
+      }
+
+      const runAt = productionRunAt(form.playDate.value);
+      form.runDate.value = runAt.date;
+      form.runTime.value = runAt.time;
+      executionHint.textContent = `Producción: se ejecutará automáticamente el ${runAt.date} a las ${runAt.time}.`;
+    }
+
+    function productionRunAt(playDate) {
+      const date = dateFromValue(playDate);
+      date.setDate(date.getDate() - 3);
+      return { date: toDateValue(date), time: "08:00" };
+    }
+
+    function dateFromValue(value) {
+      const [year, month, day] = value.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
     function toDateValue(date) {
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     }
@@ -365,7 +462,7 @@
         .replaceAll("'", "&#039;");
     }
 
-    setDefaultRunAt();
+    setMode("production");
     loadReservations();
     setInterval(loadReservations, 5000);
   </script>

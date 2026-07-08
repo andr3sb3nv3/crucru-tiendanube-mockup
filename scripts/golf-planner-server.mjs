@@ -111,11 +111,8 @@ function normalizeReservation(payload) {
   if (!memberIds.length) throw new Error("Cargá al menos una matrícula.");
   if (memberIds.length > 4) throw new Error("Cargá hasta 4 matrículas para una misma línea.");
 
-  const runDate = String(payload.runDate || "").trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(runDate)) throw new Error("Elegí una fecha de ejecución válida.");
-
-  const runTime = String(payload.runTime || "").trim();
-  if (!isTime(runTime)) throw new Error("Elegí una hora de ejecución válida.");
+  const mode = normalizeMode(payload.mode);
+  const { runDate, runTime } = executionTimeForMode(mode, payload, playDate);
 
   const timeWindowStart = String(payload.timeWindowStart || process.env.GOLF_TIME_WINDOW_START || "12:30").trim();
   const timeWindowEnd = String(payload.timeWindowEnd || process.env.GOLF_TIME_WINDOW_END || "14:30").trim();
@@ -124,6 +121,7 @@ function normalizeReservation(payload) {
   return {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     status: "pending",
+    mode,
     playDate,
     runDate,
     runTime,
@@ -139,6 +137,27 @@ function normalizeReservation(payload) {
     lastRunAt: null,
     lastError: null,
   };
+}
+
+function normalizeMode(value) {
+  return String(value || "production").trim().toLowerCase() === "development" ? "development" : "production";
+}
+
+function executionTimeForMode(mode, payload, playDate) {
+  if (mode === "production") {
+    return {
+      runDate: formatIsoDate(addDays(dateFromIso(playDate), -3)),
+      runTime: "08:00",
+    };
+  }
+
+  const runDate = String(payload.runDate || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(runDate)) throw new Error("Elegí una fecha de ejecución válida.");
+
+  const runTime = String(payload.runTime || "").trim();
+  if (!isTime(runTime)) throw new Error("Elegí una hora de ejecución válida.");
+
+  return { runDate, runTime };
 }
 
 function runReservationNow(id) {
@@ -318,6 +337,21 @@ function booleanEnv(name, fallback) {
 
 function isTime(value) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function addDays(date, days) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function formatIsoDate(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function dateFromIso(value) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
 function dateTimeFromLocal(value) {
