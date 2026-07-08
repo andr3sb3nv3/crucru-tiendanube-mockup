@@ -28,7 +28,7 @@ const targets = {
     defaultBookingText: () => process.env.GOLF_BOOKING_TEXT || "practica deportiva feriado",
   },
   "jockey-palermo": {
-    label: "Jockey - Palermo",
+    label: "Jockey Club",
     script: "scripts/jockey-agent.mjs",
     productionAdvanceDays: 2,
     defaultBookingText: () => process.env.JOCKEY_TOURNAMENT_TEXT || "AZUL",
