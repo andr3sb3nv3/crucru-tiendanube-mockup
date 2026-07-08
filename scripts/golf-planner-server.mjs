@@ -20,6 +20,20 @@ const port = Number(process.env.PORT || process.env.GOLF_PLANNER_PORT || 5180);
 const publicDir = path.resolve("golf-reservas");
 const schedulerIntervalMs = Number(process.env.GOLF_SCHEDULER_INTERVAL_MS || 15000);
 const enableScheduler = booleanEnv("GOLF_ENABLE_INTERNAL_SCHEDULER", true);
+const targets = {
+  "golf-tracker": {
+    label: "Golf Tracker",
+    script: "scripts/golf-agent.mjs",
+    productionAdvanceDays: 3,
+    defaultBookingText: () => process.env.GOLF_BOOKING_TEXT || "practica deportiva feriado",
+  },
+  "jockey-palermo": {
+    label: "Jockey - Palermo",
+    script: "scripts/jockey-agent.mjs",
+    productionAdvanceDays: 2,
+    defaultBookingText: () => process.env.JOCKEY_TOURNAMENT_TEXT || "AZUL",
+  },
+};
 
 await initStore();
 
@@ -112,16 +126,24 @@ function normalizeReservation(payload) {
   if (memberIds.length > 4) throw new Error("Cargá hasta 4 matrículas para una misma línea.");
 
   const mode = normalizeMode(payload.mode);
-  const { runDate, runTime } = executionTimeForMode(mode, payload, playDate);
+  const target = normalizeTarget(payload.target);
+  const { runDate, runTime } = executionTimeForMode(mode, payload, playDate, target);
 
-  const timeWindowStart = String(payload.timeWindowStart || process.env.GOLF_TIME_WINDOW_START || "12:30").trim();
-  const timeWindowEnd = String(payload.timeWindowEnd || process.env.GOLF_TIME_WINDOW_END || "14:30").trim();
+  const defaultTimeWindowStart = target === "jockey-palermo"
+    ? process.env.JOCKEY_TIME_WINDOW_START || "12:30"
+    : process.env.GOLF_TIME_WINDOW_START || "12:30";
+  const defaultTimeWindowEnd = target === "jockey-palermo"
+    ? process.env.JOCKEY_TIME_WINDOW_END || "14:30"
+    : process.env.GOLF_TIME_WINDOW_END || "14:30";
+  const timeWindowStart = String(payload.timeWindowStart || defaultTimeWindowStart).trim();
+  const timeWindowEnd = String(payload.timeWindowEnd || defaultTimeWindowEnd).trim();
   if (!isTime(timeWindowStart) || !isTime(timeWindowEnd)) throw new Error("El rango horario debe estar en formato HH:mm.");
 
   return {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     status: "pending",
     mode,
+    target,
     playDate,
     runDate,
     runTime,
@@ -130,7 +152,7 @@ function normalizeReservation(payload) {
     memberIds,
     playerData,
     players: memberIds.length,
-    bookingText: String(payload.bookingText || process.env.GOLF_BOOKING_TEXT || "practica deportiva feriado").trim(),
+    bookingText: String(payload.bookingText || targets[target].defaultBookingText()).trim(),
     timeWindowStart,
     timeWindowEnd,
     createdAt: new Date().toISOString(),
@@ -143,10 +165,15 @@ function normalizeMode(value) {
   return String(value || "production").trim().toLowerCase() === "development" ? "development" : "production";
 }
 
-function executionTimeForMode(mode, payload, playDate) {
+function normalizeTarget(value) {
+  const target = String(value || "golf-tracker").trim().toLowerCase();
+  return targets[target] ? target : "golf-tracker";
+}
+
+function executionTimeForMode(mode, payload, playDate, target) {
   if (mode === "production") {
     return {
-      runDate: formatIsoDate(addDays(dateFromIso(playDate), -3)),
+      runDate: formatIsoDate(addDays(dateFromIso(playDate), -targets[target].productionAdvanceDays)),
       runTime: "08:00",
     };
   }
@@ -170,7 +197,7 @@ async function runReservationNowAsync(id) {
   const reservation = await getReservation(id);
   if (!reservation) return;
 
-  const child = spawn(process.execPath, ["scripts/golf-agent.mjs"], {
+  const child = spawn(process.execPath, [agentScriptFor(reservation)], {
     cwd: process.cwd(),
     env: reservationEnv(reservation),
     stdio: ["ignore", "pipe", "pipe"],
@@ -228,6 +255,8 @@ async function runDueReservations() {
 }
 
 function reservationEnv(reservation) {
+  if (normalizeTarget(reservation.target) === "jockey-palermo") return jockeyReservationEnv(reservation);
+
   return {
     ...process.env,
     GOLF_DATE: reservation.playDate,
@@ -247,6 +276,32 @@ function reservationEnv(reservation) {
     GOLF_BASE_RESERVATION_SECONDS: process.env.GOLF_BASE_RESERVATION_SECONDS || "240",
     GOLF_RESERVATION_TRANSITION_SECONDS: process.env.GOLF_RESERVATION_TRANSITION_SECONDS || "90",
   };
+}
+
+function jockeyReservationEnv(reservation) {
+  const memberIds = reservation.memberIds || [];
+  const firstMemberId = memberIds[0] || "";
+  const username = process.env.JOCKEY_USERNAME || firstMemberId;
+  return {
+    ...process.env,
+    JOCKEY_DATE: reservation.playDate,
+    JOCKEY_MEMBER_IDS: memberIds.join(","),
+    JOCKEY_PLAYERS_DATA: JSON.stringify(
+      reservation.playerData || memberIds.map((memberId) => ({ memberId, documentId: "" })),
+    ),
+    JOCKEY_PLAYERS: String(reservation.players || memberIds.length),
+    JOCKEY_TOURNAMENT_TEXT: reservation.bookingText || process.env.JOCKEY_TOURNAMENT_TEXT || "AZUL",
+    JOCKEY_TIME_WINDOW_START: reservation.timeWindowStart || process.env.JOCKEY_TIME_WINDOW_START || "12:30",
+    JOCKEY_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.JOCKEY_TIME_WINDOW_END || "14:30",
+    JOCKEY_CONFIRM_BOOKING: process.env.JOCKEY_CONFIRM_BOOKING || "false",
+    JOCKEY_HEADLESS: process.env.JOCKEY_HEADLESS || process.env.GOLF_HEADLESS || "true",
+    JOCKEY_USERNAME: username,
+    JOCKEY_PASSWORD: process.env.JOCKEY_PASSWORD || username,
+  };
+}
+
+function agentScriptFor(reservation) {
+  return targets[normalizeTarget(reservation.target)].script;
 }
 
 function reservationIsDue(reservation, now) {

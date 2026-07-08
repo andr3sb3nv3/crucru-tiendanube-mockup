@@ -85,7 +85,8 @@
       margin-bottom: 18px;
     }
 
-    .mode-switch {
+    .mode-switch,
+    .target-switch {
       display: flex;
       gap: 6px;
       padding: 4px;
@@ -94,12 +95,14 @@
       background: #fff;
     }
 
-    .mode-switch button {
+    .mode-switch button,
+    .target-switch button {
       color: #2f3b35;
       background: transparent;
     }
 
-    .mode-switch button.active {
+    .mode-switch button.active,
+    .target-switch button.active {
       color: #fff;
       background: #146b43;
     }
@@ -178,8 +181,9 @@
     .error {
       color: #b42318;
       font-size: 12px;
-      max-width: 240px;
+      max-width: 360px;
       overflow-wrap: anywhere;
+      white-space: pre-wrap;
     }
 
     @media (max-width: 720px) {
@@ -209,6 +213,12 @@
 
     <form id="reservation-form">
       <input name="mode" type="hidden" value="production">
+      <input name="target" type="hidden" value="golf-tracker">
+
+      <div class="target-switch" aria-label="Cancha">
+        <button class="active" id="target-golf-tracker" type="button">Golf Tracker</button>
+        <button id="target-jockey-palermo" type="button">Jockey - Palermo</button>
+      </div>
 
       <div class="grid">
         <label>
@@ -285,9 +295,25 @@
     const runNowButton = document.querySelector("#run-now");
     const productionButton = document.querySelector("#mode-production");
     const developmentButton = document.querySelector("#mode-development");
+    const golfTrackerButton = document.querySelector("#target-golf-tracker");
+    const jockeyPalermoButton = document.querySelector("#target-jockey-palermo");
     const runDateField = document.querySelector("#run-date-field");
     const runTimeField = document.querySelector("#run-time-field");
     const executionHint = document.querySelector("#execution-hint");
+    const targetDefaults = {
+      "golf-tracker": {
+        bookingText: "practica deportiva feriado",
+        memberIds: "135890\n105581 16763366\n138121 40388889\n130742 39770573",
+        timeWindowStart: "12:30",
+        timeWindowEnd: "14:30"
+      },
+      "jockey-palermo": {
+        bookingText: "AZUL",
+        memberIds: "135890",
+        timeWindowStart: "12:30",
+        timeWindowEnd: "14:30"
+      }
+    };
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -302,6 +328,8 @@
 
     productionButton.addEventListener("click", () => setMode("production"));
     developmentButton.addEventListener("click", () => setMode("development"));
+    golfTrackerButton.addEventListener("click", () => setTarget("golf-tracker"));
+    jockeyPalermoButton.addEventListener("click", () => setTarget("jockey-palermo"));
     form.playDate.addEventListener("change", syncExecutionFields);
 
     async function createReservation(url, successPrefix) {
@@ -320,10 +348,8 @@
       }
       message.textContent = `${successPrefix}. Se intentará reservar el ${formatRunAt(payload)}.`;
       form.reset();
-      setMode(form.mode.value || "production");
-      form.timeWindowStart.value = "12:30";
-      form.timeWindowEnd.value = "14:30";
-      form.bookingText.value = "practica deportiva feriado";
+      setTarget("golf-tracker");
+      setMode("production");
       await loadReservations();
     }
 
@@ -334,7 +360,7 @@
       const reservations = await response.json();
       tbody.innerHTML = reservations.map((reservation) => `
         <tr>
-          <td>${escapeHtml(reservation.playDate)}${reservation.mode ? `<br>${escapeHtml(reservation.mode)}` : ""}</td>
+          <td>${escapeHtml(reservation.playDate)}${reservation.mode ? `<br>${escapeHtml(reservation.mode)}` : ""}${reservation.target ? `<br>${escapeHtml(formatTarget(reservation.target))}` : ""}</td>
           <td>${escapeHtml(formatRunAt(reservation))}</td>
           <td>${escapeHtml(formatPlayers(reservation))}</td>
           <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
@@ -379,6 +405,10 @@
       return reservation.memberIds.join(", ");
     }
 
+    function formatTarget(target) {
+      return target === "jockey-palermo" ? "Jockey - Palermo" : "Golf Tracker";
+    }
+
     function formatRunAt(reservation) {
       if (reservation.runDate && reservation.runTime) return `${reservation.runDate} ${reservation.runTime}`;
       if (reservation.runAtLocal) return reservation.runAtLocal.replace("T", " ").slice(0, 16);
@@ -394,7 +424,7 @@
         .map((line) => line.trim())
         .filter(Boolean)
         .filter((line) => !line.startsWith(">"));
-      return lines.at(-1) || "";
+      return lines.slice(-6).join("\n");
     }
 
     function setDefaultRunAt() {
@@ -417,26 +447,40 @@
       syncExecutionFields();
     }
 
+    function setTarget(target) {
+      form.target.value = target;
+      const isJockey = target === "jockey-palermo";
+      golfTrackerButton.classList.toggle("active", !isJockey);
+      jockeyPalermoButton.classList.toggle("active", isJockey);
+
+      const defaults = targetDefaults[target] || targetDefaults["golf-tracker"];
+      form.bookingText.value = defaults.bookingText;
+      form.memberIds.value = defaults.memberIds;
+      form.timeWindowStart.value = defaults.timeWindowStart;
+      form.timeWindowEnd.value = defaults.timeWindowEnd;
+      syncExecutionFields();
+    }
+
     function syncExecutionFields() {
       if (form.mode.value !== "production") {
-        executionHint.textContent = "Desarrollo: la solicitud se ejecuta en la fecha y hora manual indicadas.";
+        executionHint.textContent = `Desarrollo: ${formatTarget(form.target.value)} se ejecuta en la fecha y hora manual indicadas.`;
         return;
       }
 
       if (!form.playDate.value) {
-        executionHint.textContent = "Producción: elegí el día de juego y se calculará la ejecución automática.";
+        executionHint.textContent = `Producción: elegí el día de juego y se calculará la ejecución automática para ${formatTarget(form.target.value)}.`;
         return;
       }
 
-      const runAt = productionRunAt(form.playDate.value);
+      const runAt = productionRunAt(form.playDate.value, form.target.value);
       form.runDate.value = runAt.date;
       form.runTime.value = runAt.time;
       executionHint.textContent = `Producción: se ejecutará automáticamente el ${runAt.date} a las ${runAt.time}.`;
     }
 
-    function productionRunAt(playDate) {
+    function productionRunAt(playDate, target) {
       const date = dateFromValue(playDate);
-      date.setDate(date.getDate() - 3);
+      date.setDate(date.getDate() - (target === "jockey-palermo" ? 2 : 3));
       return { date: toDateValue(date), time: "08:00" };
     }
 
@@ -462,6 +506,7 @@
         .replaceAll("'", "&#039;");
     }
 
+    setTarget("golf-tracker");
     setMode("production");
     loadReservations();
     setInterval(loadReservations, 5000);

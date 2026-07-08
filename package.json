@@ -2,6 +2,7 @@
   "scripts": {
     "start": "node scripts/golf-planner-server.mjs",
     "golf:agent": "node scripts/golf-agent.mjs",
+    "jockey:agent": "node scripts/jockey-agent.mjs",
     "golf:planner": "node scripts/golf-planner-server.mjs",
     "golf:due": "node scripts/golf-run-due.mjs",
     "build": "node scripts/build-site.mjs",

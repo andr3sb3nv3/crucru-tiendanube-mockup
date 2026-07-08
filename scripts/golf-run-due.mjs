@@ -9,6 +9,15 @@ loadEnvFile(".env.golf");
 
 await initStore();
 
+const targets = {
+  "golf-tracker": {
+    script: "scripts/golf-agent.mjs",
+  },
+  "jockey-palermo": {
+    script: "scripts/jockey-agent.mjs",
+  },
+};
+
 const now = process.env.GOLF_DUE_AT ? dateTimeFromLocal(process.env.GOLF_DUE_AT) : new Date();
 const dueReservations = await claimDueReservations(now, reservationIsDue);
 
@@ -20,7 +29,7 @@ if (!dueReservations.length) {
 for (const reservation of dueReservations) {
   console.log(`Ejecutando reserva ${reservation.id} para jugar ${reservation.playDate}`);
 
-  const result = spawnSync(process.execPath, ["scripts/golf-agent.mjs"], {
+  const result = spawnSync(process.execPath, [agentScriptFor(reservation)], {
     cwd: process.cwd(),
     env: reservationEnv(reservation),
     encoding: "utf8",
@@ -56,6 +65,8 @@ function statusFromExitCode(code) {
 }
 
 function reservationEnv(reservation) {
+  if (normalizeTarget(reservation.target) === "jockey-palermo") return jockeyReservationEnv(reservation);
+
   return {
     ...process.env,
     GOLF_DATE: reservation.playDate,
@@ -73,6 +84,37 @@ function reservationEnv(reservation) {
     GOLF_BASE_RESERVATION_SECONDS: process.env.GOLF_BASE_RESERVATION_SECONDS || "240",
     GOLF_RESERVATION_TRANSITION_SECONDS: process.env.GOLF_RESERVATION_TRANSITION_SECONDS || "90",
   };
+}
+
+function jockeyReservationEnv(reservation) {
+  const memberIds = reservation.memberIds || [];
+  const firstMemberId = memberIds[0] || "";
+  const username = process.env.JOCKEY_USERNAME || firstMemberId;
+  return {
+    ...process.env,
+    JOCKEY_DATE: reservation.playDate,
+    JOCKEY_MEMBER_IDS: memberIds.join(","),
+    JOCKEY_PLAYERS_DATA: JSON.stringify(
+      reservation.playerData || memberIds.map((memberId) => ({ memberId, documentId: "" })),
+    ),
+    JOCKEY_PLAYERS: String(reservation.players || memberIds.length),
+    JOCKEY_TOURNAMENT_TEXT: reservation.bookingText || process.env.JOCKEY_TOURNAMENT_TEXT || "AZUL",
+    JOCKEY_TIME_WINDOW_START: reservation.timeWindowStart || process.env.JOCKEY_TIME_WINDOW_START || "12:30",
+    JOCKEY_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.JOCKEY_TIME_WINDOW_END || "14:30",
+    JOCKEY_CONFIRM_BOOKING: process.env.JOCKEY_CONFIRM_BOOKING || "false",
+    JOCKEY_HEADLESS: process.env.JOCKEY_HEADLESS || process.env.GOLF_HEADLESS || "true",
+    JOCKEY_USERNAME: username,
+    JOCKEY_PASSWORD: process.env.JOCKEY_PASSWORD || username,
+  };
+}
+
+function agentScriptFor(reservation) {
+  return targets[normalizeTarget(reservation.target)].script;
+}
+
+function normalizeTarget(value) {
+  const target = String(value || "golf-tracker").trim().toLowerCase();
+  return targets[target] ? target : "golf-tracker";
 }
 
 function reservationIsDue(reservation, at) {

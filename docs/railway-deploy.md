@@ -54,6 +54,13 @@ GOLF_MAX_ATTEMPTS=1
 GOLF_RESERVATION_SETTLE_SECONDS=240
 GOLF_BASE_RESERVATION_SECONDS=240
 GOLF_RESERVATION_TRANSITION_SECONDS=90
+
+JOCKEY_URL=https://golf.e-jockeyclub.org.ar/golf/login.php
+JOCKEY_USERNAME=...
+JOCKEY_PASSWORD=...
+JOCKEY_TOURNAMENT_TEXT=AZUL
+JOCKEY_CONFIRM_BOOKING=false
+JOCKEY_HEADLESS=true
 ```
 
 En el servicio web, dejar:
@@ -74,8 +81,14 @@ GOLF_CONFIRM_BOOKING=false
 
 Crear una solicitud desde la web y usar `Generar solicitud ahora` para validar login, grilla y modal sin confirmar.
 
-Cuando este validado, volver a:
+Cuando Golf Tracker este validado, volver a:
 
 ```bash
 GOLF_CONFIRM_BOOKING=true
+```
+
+Cuando Jockey este validado, activar:
+
+```bash
+JOCKEY_CONFIRM_BOOKING=true
 ```
