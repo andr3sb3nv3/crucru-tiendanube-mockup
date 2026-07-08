@@ -334,47 +334,70 @@
 
     async function createReservation(url, successPrefix) {
       setBusy(true);
-      const data = Object.fromEntries(new FormData(form).entries());
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      const payload = await response.json();
-      setBusy(false);
-      if (!response.ok) {
-        message.textContent = payload.error || "No se pudo guardar.";
-        return;
+      try {
+        const data = Object.fromEntries(new FormData(form).entries());
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        const payload = await readJsonResponse(response);
+        if (!response.ok) {
+          message.textContent = payload.error || `No se pudo guardar. HTTP ${response.status}`;
+          return;
+        }
+        message.textContent = `${successPrefix}. Se intentará reservar el ${formatRunAt(payload)}.`;
+        form.reset();
+        setTarget("golf-tracker");
+        setMode("production");
+        await loadReservations();
+      } catch (error) {
+        message.textContent = `No se pudo guardar: ${error.message || error}`;
+      } finally {
+        setBusy(false, { keepMessage: true });
       }
-      message.textContent = `${successPrefix}. Se intentará reservar el ${formatRunAt(payload)}.`;
-      form.reset();
-      setTarget("golf-tracker");
-      setMode("production");
-      await loadReservations();
+    }
+
+    async function readJsonResponse(response) {
+      const text = await response.text();
+      if (!text) return {};
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { error: text.slice(0, 500) };
+      }
+    }
+
+    async function loadReservations() {
+      try {
+        const response = await fetch("/api/reservations");
+        const reservations = await readJsonResponse(response);
+        if (!response.ok) {
+          message.textContent = reservations.error || `No pude actualizar solicitudes. HTTP ${response.status}`;
+          return;
+        }
+        tbody.innerHTML = reservations.map((reservation) => `
+          <tr>
+            <td>${escapeHtml(reservation.playDate)}${reservation.mode ? `<br>${escapeHtml(reservation.mode)}` : ""}${reservation.target ? `<br>${escapeHtml(formatTarget(reservation.target))}` : ""}</td>
+            <td>${escapeHtml(formatRunAt(reservation))}</td>
+            <td>${escapeHtml(formatPlayers(reservation))}</td>
+            <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
+            <td><span class="status">${escapeHtml(reservation.status)}</span></td>
+            <td class="error">${escapeHtml(formatLastStatus(reservation))}</td>
+            <td>
+              <div class="actions">
+                <button class="secondary" type="button" data-run="${escapeHtml(reservation.id)}">Intentar ahora</button>
+                <button class="secondary" type="button" data-delete="${escapeHtml(reservation.id)}">Borrar</button>
+              </div>
+            </td>
+          </tr>
+        `).join("");
+      } catch (error) {
+        message.textContent = `No pude actualizar solicitudes: ${error.message || error}`;
+      }
     }
 
     document.querySelector("#refresh").addEventListener("click", loadReservations);
-
-    async function loadReservations() {
-      const response = await fetch("/api/reservations");
-      const reservations = await response.json();
-      tbody.innerHTML = reservations.map((reservation) => `
-        <tr>
-          <td>${escapeHtml(reservation.playDate)}${reservation.mode ? `<br>${escapeHtml(reservation.mode)}` : ""}${reservation.target ? `<br>${escapeHtml(formatTarget(reservation.target))}` : ""}</td>
-          <td>${escapeHtml(formatRunAt(reservation))}</td>
-          <td>${escapeHtml(formatPlayers(reservation))}</td>
-          <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
-          <td><span class="status">${escapeHtml(reservation.status)}</span></td>
-          <td class="error">${escapeHtml(formatLastStatus(reservation))}</td>
-          <td>
-            <div class="actions">
-              <button class="secondary" type="button" data-run="${escapeHtml(reservation.id)}">Intentar ahora</button>
-              <button class="secondary" type="button" data-delete="${escapeHtml(reservation.id)}">Borrar</button>
-            </div>
-          </td>
-        </tr>
-      `).join("");
-    }
 
     tbody.addEventListener("click", async (event) => {
       const deleteId = event.target.dataset.delete;
@@ -389,11 +412,15 @@
       await loadReservations();
     });
 
-    function setBusy(isBusy) {
+    function setBusy(isBusy, options = {}) {
       form.querySelectorAll("button").forEach((button) => {
         button.disabled = isBusy;
       });
-      message.textContent = isBusy ? "Procesando..." : "";
+      if (isBusy) {
+        message.textContent = "Procesando...";
+      } else if (!options.keepMessage) {
+        message.textContent = "";
+      }
     }
 
     function formatPlayers(reservation) {
