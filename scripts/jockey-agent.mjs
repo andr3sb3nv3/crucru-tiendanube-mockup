@@ -58,7 +58,7 @@ async function main() {
     await openTournament(page, tournament);
     const slot = await selectSlot(page, players.length);
     await openSlot(page, slot);
-    await fillPlayers(page, players);
+    const verifiedPlayers = await fillPlayers(page, players);
 
     if (!config.confirmBooking) {
       await snapshot(page, "jockey-listo-sin-confirmar");
@@ -68,7 +68,7 @@ async function main() {
       return;
     }
 
-    await confirmReservation(page);
+    await confirmReservation(page, slot, verifiedPlayers);
     await snapshot(page, "jockey-confirmado");
     log("Reserva confirmada por el sitio del Jockey.");
   } finally {
@@ -242,6 +242,7 @@ async function openSlot(page, slot) {
 
 async function fillPlayers(page, selectedPlayers) {
   const formSlots = await availableFormSlots(page);
+  const verifiedPlayers = [];
   for (let index = 0; index < selectedPlayers.length; index += 1) {
     const slotNumber = formSlots[index];
     const player = selectedPlayers[index];
@@ -266,10 +267,12 @@ async function fillPlayers(page, selectedPlayers) {
       throw new Error(`JOCKEY: no pude verificar la matrícula ${player.memberId}${lastDialogMessage ? ` (${lastDialogMessage})` : ""}.`);
     }
     log(`Verificado: ${verified.id} - ${verified.name}.`);
+    verifiedPlayers.push({ ...player, ...verified, slotNumber });
   }
+  return verifiedPlayers;
 }
 
-async function confirmReservation(page) {
+async function confirmReservation(page, slot, verifiedPlayers) {
   log("Confirmo reserva(s) en el sitio.");
   const button = page.locator('input#Agregar, input[type="button"][value*="Confirmar"]').first();
   await Promise.all([
@@ -282,6 +285,46 @@ async function confirmReservation(page) {
   if (/Tiempo para realizar la reserva/i.test(body)) {
     await snapshot(page, "confirmacion-pendiente");
     throw new Error("JOCKEY: el sitio siguió en el formulario después de confirmar. Revisá la última captura.");
+  }
+
+  await assertPlayersInFinalGrid(page, slot, verifiedPlayers);
+}
+
+async function assertPlayersInFinalGrid(page, slot, verifiedPlayers) {
+  log(`Verifico que la línea final ${slot.time} hoyo ${slot.hole} tenga todos los jugadores.`);
+  const finalLine = await page.evaluate((selected) => {
+    for (const row of document.querySelectorAll("tr")) {
+      const cells = [...row.children];
+      const time = cells[0]?.innerText.trim();
+      const hole = cells[1]?.innerText.trim();
+      if (time !== selected.time || hole !== selected.hole) continue;
+      return {
+        time,
+        hole,
+        players: cells.slice(2, 6).map((cell) => cell.innerText.replace(/\s+/g, " ").trim()),
+      };
+    }
+    return null;
+  }, slot);
+
+  if (!finalLine) {
+    await snapshot(page, "linea-final-no-encontrada");
+    throw new Error(`JOCKEY: confirmé, pero no encontré la línea ${slot.time} hoyo ${slot.hole} para validar.`);
+  }
+
+  const finalText = normalizeText(finalLine.players.join(" "));
+  const missing = verifiedPlayers.filter((player) => {
+    const id = normalizeText(player.id || player.memberId);
+    const name = normalizeText(player.name);
+    const nameTokens = name.split(/\s+/).filter((token) => token.length > 2);
+    const nameMatch = nameTokens.slice(0, 2).every((token) => finalText.includes(token));
+    return !(id && finalText.includes(id)) && !nameMatch;
+  });
+
+  log(`Línea final: ${finalLine.players.filter(Boolean).join(" | ")}`);
+  if (missing.length) {
+    await snapshot(page, "jugadores-faltantes");
+    throw new Error(`JOCKEY: la línea se confirmó, pero no encontré a: ${missing.map((player) => `${player.memberId} ${player.name || ""}`.trim()).join(", ")}.`);
   }
 }
 
