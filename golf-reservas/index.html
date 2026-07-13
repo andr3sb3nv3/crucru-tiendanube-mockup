@@ -379,7 +379,7 @@
 
     async function loadReservations() {
       try {
-        const response = await fetch("/api/reservations");
+        const response = await fetch("/api/reservations", { cache: "no-store" });
         const reservations = await readJsonResponse(response);
         if (!response.ok) {
           message.textContent = reservations.error || `No pude actualizar solicitudes. HTTP ${response.status}`;
@@ -391,7 +391,7 @@
             <td>${escapeHtml(formatRunAt(reservation))}</td>
             <td>${escapeHtml(formatPlayers(reservation))}</td>
             <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
-            <td><span class="status">${escapeHtml(reservation.status)}</span></td>
+            <td><span class="status">${escapeHtml(formatStatus(reservation.status))}</span></td>
             <td class="error">${escapeHtml(formatLastStatus(reservation))}</td>
             <td>
               <div class="actions">
@@ -412,7 +412,9 @@
       const deleteId = event.target.dataset.delete;
       const runId = event.target.dataset.run;
       if (runId) {
-        await fetch(`/api/reservations/${encodeURIComponent(runId)}/run-now`, { method: "POST" });
+        const response = await fetch(`/api/reservations/${encodeURIComponent(runId)}/run-now`, { method: "POST" });
+        const payload = await readJsonResponse(response);
+        if (!response.ok) message.textContent = payload.error || `No pude iniciar la solicitud. HTTP ${response.status}`;
         await loadReservations();
         return;
       }
@@ -444,6 +446,17 @@
     function formatTarget(target) {
       if (target === "club-newman") return "Club Newman";
       return target === "jockey-palermo" ? "Jockey Club" : "Golf Tracker";
+    }
+
+    function formatStatus(status) {
+      return {
+        pending: "pendiente",
+        starting: "iniciando",
+        running: "ejecutando",
+        done: "completada",
+        failed: "fallida",
+        dry_run: "prueba"
+      }[status] || status;
     }
 
     function formatRunAt(reservation) {
@@ -548,7 +561,7 @@
     setTarget("golf-tracker");
     setMode("production");
     loadReservations();
-    setInterval(loadReservations, 5000);
+    setInterval(loadReservations, 1000);
   </script>
 </body>
 </html>

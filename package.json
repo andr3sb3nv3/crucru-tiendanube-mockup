@@ -5,6 +5,7 @@
     "jockey:agent": "node scripts/jockey-agent.mjs",
     "golf:planner": "node scripts/golf-planner-server.mjs",
     "golf:due": "node scripts/golf-run-due.mjs",
+    "test": "node --test test/*.test.mjs",
     "build": "node scripts/build-site.mjs",
     "scrape": "node scripts/scrape-site.mjs",
     "scrape:size-guide": "node scripts/scrape-size-guide.mjs",

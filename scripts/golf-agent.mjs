@@ -29,6 +29,7 @@ const config = {
   settleSeconds: Number(env("GOLF_RESERVATION_SETTLE_SECONDS", "240")),
   baseReservationSeconds: Number(env("GOLF_BASE_RESERVATION_SECONDS", "240")),
   transitionSeconds: Number(env("GOLF_RESERVATION_TRANSITION_SECONDS", "90")),
+  notBeforeLocal: env("GOLF_NOT_BEFORE_LOCAL", ""),
 };
 
 fs.mkdirSync(config.outputDir, { recursive: true });
@@ -36,10 +37,13 @@ config.memberIds = config.playerData.map((player) => player.memberId);
 if (config.memberIds.length) config.players = config.memberIds.length;
 
 const browser = await chromium.launch({ headless: config.headless });
-const context = await browser.newContext({
+const storageStatePath = path.join(config.outputDir, "storage-state.json");
+const contextOptions = {
   locale: "es-AR",
   timezoneId: "America/Argentina/Buenos_Aires",
-});
+};
+if (isUsableStorageState(storageStatePath)) contextOptions.storageState = storageStatePath;
+const context = await browser.newContext(contextOptions);
 const page = await context.newPage();
 
 try {
@@ -49,7 +53,7 @@ try {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 } finally {
-  await context.storageState({ path: path.join(config.outputDir, "storage-state.json") });
+  await context.storageState({ path: storageStatePath });
   await browser.close();
 }
 
@@ -65,16 +69,22 @@ async function runAgent() {
   await selectClubIfVisible();
   await loginIfNeeded();
   await openBooking();
+  await waitUntilNotBefore();
 
   for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
     console.log(
       `Buscando turno ${config.date} entre ${config.timeWindowStart} y ${config.timeWindowEnd} (${attempt}/${config.maxAttempts})`,
     );
-    await chooseBookingCriteria();
-    await waitForScheduleReady();
-    await closeFloatingChatIfVisible();
-
-    const slot = await findSlot();
+    let slot = null;
+    try {
+      await chooseBookingCriteria();
+      await waitForScheduleReady();
+      await closeFloatingChatIfVisible();
+      slot = await findSlot();
+    } catch (error) {
+      if (attempt >= config.maxAttempts) throw error;
+      console.log(`La grilla todavía no está lista: ${error instanceof Error ? error.message : error}`);
+    }
     if (slot) {
       await clickSlot(slot);
       await page.waitForTimeout(700);
@@ -109,6 +119,21 @@ async function runAgent() {
   );
 }
 
+async function waitUntilNotBefore() {
+  if (!config.notBeforeLocal) return;
+  const target = new Date(config.notBeforeLocal);
+  if (!Number.isFinite(target.getTime())) return;
+
+  const initialWait = target.getTime() - Date.now();
+  if (initialWait <= 0) return;
+  console.log(`Sesión preparada. Espero hasta ${config.notBeforeLocal.replace("T", " ")} para consultar la grilla.`);
+
+  while (Date.now() < target.getTime()) {
+    await page.waitForTimeout(Math.min(1000, Math.max(1, target.getTime() - Date.now())));
+  }
+  console.log("Horario de apertura alcanzado; comienzo la búsqueda.");
+}
+
 async function closeFloatingChatIfVisible() {
   const close = await firstVisible([
     page.locator("[class*='chat'], [class*='caddy'], .card, div").filter({ hasText: /caddy virtual/i }).locator(".bi-x, .bi-x-lg, [class*='close'], [class*='Close'], button").last(),
@@ -117,6 +142,16 @@ async function closeFloatingChatIfVisible() {
   if (!close) return;
   await close.click({ force: true }).catch(() => {});
   await page.waitForTimeout(250);
+}
+
+function isUsableStorageState(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  try {
+    const state = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return Array.isArray(state.cookies) && Array.isArray(state.origins);
+  } catch {
+    return false;
+  }
 }
 
 async function waitForScheduleReady() {

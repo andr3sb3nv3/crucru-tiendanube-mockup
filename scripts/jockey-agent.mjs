@@ -19,6 +19,9 @@ const config = {
   confirmBooking: booleanEnv("JOCKEY_CONFIRM_BOOKING", false),
   headless: booleanEnv("JOCKEY_HEADLESS", true),
   outputDir: env("JOCKEY_OUTPUT_DIR", "outputs/jockey-agent"),
+  maxAttempts: positiveNumber(env("JOCKEY_MAX_ATTEMPTS", "1"), 1),
+  pollSeconds: positiveNumber(env("JOCKEY_POLL_SECONDS", "1"), 1),
+  notBeforeLocal: env("JOCKEY_NOT_BEFORE_LOCAL", ""),
 };
 
 if (!players.length) throw new Error(`${config.siteName}: cargá al menos una matrícula para reservar.`);
@@ -55,9 +58,8 @@ async function main() {
     });
 
     await login(page);
-    const tournament = await selectTournament(page);
-    await openTournament(page, tournament);
-    const slot = await selectSlot(page, players.length);
+    await waitUntilNotBefore(page);
+    const slot = await findAvailableSlot(page);
     await openSlot(page, slot);
     const verifiedPlayers = await fillPlayers(page, players);
 
@@ -71,10 +73,43 @@ async function main() {
 
     await confirmReservation(page, slot, verifiedPlayers);
     await snapshot(page, "jockey-confirmado");
-    log("Reserva confirmada por el sitio del Jockey.");
+    log(`Reserva confirmada por el sitio de ${config.siteName}.`);
   } finally {
     await browser.close();
   }
+}
+
+async function waitUntilNotBefore(page) {
+  if (!config.notBeforeLocal) return;
+  const target = new Date(config.notBeforeLocal);
+  if (!Number.isFinite(target.getTime())) return;
+
+  const initialWait = target.getTime() - Date.now();
+  if (initialWait <= 0) return;
+  log(`Sesión preparada. Espero hasta ${config.notBeforeLocal.replace("T", " ")} para consultar los torneos.`);
+
+  while (Date.now() < target.getTime()) {
+    await page.waitForTimeout(Math.min(1000, Math.max(1, target.getTime() - Date.now())));
+  }
+  log("Horario de apertura alcanzado; comienzo la búsqueda.");
+}
+
+async function findAvailableSlot(page) {
+  let lastError;
+  for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
+    try {
+      log(`Busco torneo y línea disponibles (${attempt}/${config.maxAttempts}).`);
+      const tournament = await selectTournament(page);
+      await openTournament(page, tournament);
+      return await selectSlot(page, players.length);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= config.maxAttempts) break;
+      log(`Todavía no está disponible: ${error instanceof Error ? error.message : error}`);
+      await page.waitForTimeout(config.pollSeconds * 1000);
+    }
+  }
+  throw lastError || new Error(`${config.siteName}: no encontré una reserva disponible.`);
 }
 
 async function login(page) {
@@ -404,6 +439,11 @@ function booleanEnv(name, fallback) {
   const value = process.env[name];
   if (value === undefined) return fallback;
   return ["1", "true", "yes", "si", "sí"].includes(value.toLowerCase());
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
 function isTime(value) {

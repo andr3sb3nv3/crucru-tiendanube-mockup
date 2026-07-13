@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import http from "node:http";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
-import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
   claimDueReservations,
   deleteReservation,
@@ -10,16 +11,27 @@ import {
   initStore,
   insertReservation,
   listReservations,
+  recoverStaleReservations,
   updateReservation,
 } from "./golf-store.mjs";
+import { executeReservation } from "./golf-reservation-runner.mjs";
 
 process.env.TZ = "America/Argentina/Buenos_Aires";
 loadEnvFile(".env.golf");
 
 const port = Number(process.env.PORT || process.env.GOLF_PLANNER_PORT || 5180);
 const publicDir = path.resolve("golf-reservas");
-const schedulerIntervalMs = Number(process.env.GOLF_SCHEDULER_INTERVAL_MS || 15000);
-const enableScheduler = booleanEnv("GOLF_ENABLE_INTERNAL_SCHEDULER", true);
+const workerPollMs = positiveNumber(process.env.GOLF_WORKER_POLL_MS, 1000);
+const workerConcurrency = positiveNumber(process.env.GOLF_WORKER_CONCURRENCY, 2);
+const workerStaleMs = positiveNumber(process.env.GOLF_WORKER_STALE_MS, 15000);
+const workerMaxAttempts = positiveNumber(process.env.GOLF_WORKER_MAX_ATTEMPTS, 2);
+const workerPrewarmMs = positiveNumber(process.env.GOLF_WORKER_PREWARM_SECONDS, 90) * 1000;
+const enableWorker = booleanEnv("GOLF_RUNNER_ENABLED", true);
+const workerId = `${os.hostname()}-${process.pid}-${randomUUID().slice(0, 8)}`;
+const activeJobs = new Map();
+let workerTimer;
+let workerTickInFlight = false;
+let lastRecoveryAt = 0;
 const targets = {
   "golf-tracker": {
     label: "Golf Tracker",
@@ -58,7 +70,16 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && request.url === "/api/health") {
-      return json(response, { ok: true });
+      return json(response, {
+        ok: true,
+        worker: {
+          enabled: enableWorker,
+          active: activeJobs.size,
+          concurrency: workerConcurrency,
+          pollMs: workerPollMs,
+        },
+        now: new Date().toISOString(),
+      });
     }
 
     if (request.method === "GET" && request.url === "/api/reservations") {
@@ -69,19 +90,15 @@ const server = http.createServer(async (request, response) => {
       const payload = await readJson(request);
       const reservation = normalizeReservation(payload);
       await insertReservation(reservation);
+      wakeWorker();
       return json(response, reservation, 201);
     }
 
     if (request.method === "POST" && request.url === "/api/reservations/run-now") {
       const payload = await readJson(request);
-      const reservation = normalizeReservation(payload);
-      reservation.status = "running";
-      reservation.runMode = "manual";
-      reservation.lastRunAt = new Date().toISOString();
-      reservation.lastStdout = "Solicitud manual recibida. Iniciando agente...\n";
-      reservation.lastStderr = "";
+      const reservation = makeImmediate(normalizeReservation(payload), "Solicitud manual recibida. En cola para iniciar...\n");
       await insertReservation(reservation);
-      runReservationNow(reservation.id);
+      wakeWorker();
       return json(response, reservation, 202);
     }
 
@@ -89,19 +106,12 @@ const server = http.createServer(async (request, response) => {
       const id = decodeURIComponent(request.url.split("/")[3] || "");
       const reservation = await getReservation(id);
       if (!reservation) throw new Error("No encontré esa solicitud.");
-      if (reservation.status === "running") throw new Error("Esa solicitud ya está ejecutándose.");
+      if (["starting", "running"].includes(reservation.status)) throw new Error("Esa solicitud ya está ejecutándose.");
 
-      await updateReservation(id, (current) => ({
-        ...current,
-        status: "running",
-        runMode: "manual",
-        lastRunAt: new Date().toISOString(),
-        lastError: null,
-        lastStdout: "Reintento manual recibido. Iniciando agente...\n",
-        lastStderr: "",
-      }));
-      runReservationNow(reservation.id);
-      return json(response, reservation, 202);
+      const immediate = makeImmediate(reservation, "Reintento manual recibido. En cola para iniciar...\n");
+      const updated = await updateReservation(id, () => immediate);
+      wakeWorker();
+      return json(response, updated, 202);
     }
 
     if (request.method === "DELETE" && request.url?.startsWith("/api/reservations/")) {
@@ -120,15 +130,12 @@ const server = http.createServer(async (request, response) => {
 
 server.listen(port, () => {
   console.log(`Planificador de golf: http://localhost:${port}`);
-  if (enableScheduler) {
-    console.log(`Revisando solicitudes pendientes cada ${Math.round(schedulerIntervalMs / 1000)} segundos.`);
+  if (enableWorker) {
+    console.log(`Worker ${workerId}: revisando solicitudes cada ${workerPollMs} ms.`);
   }
 });
 
-if (enableScheduler) {
-  setInterval(runDueReservations, schedulerIntervalMs);
-  runDueReservations();
-}
+if (enableWorker) wakeWorker();
 
 function normalizeReservation(payload) {
   const playDate = String(payload.playDate || "").trim();
@@ -205,133 +212,92 @@ function executionTimeForMode(mode, payload, playDate, target) {
   return { runDate, runTime };
 }
 
-function runReservationNow(id) {
-  runReservationNowAsync(id).catch((error) => {
-    console.error(error instanceof Error ? error.stack || error.message : error);
-  });
+function wakeWorker(delay = 0) {
+  if (!enableWorker) return;
+  clearTimeout(workerTimer);
+  workerTimer = setTimeout(workerTick, Math.max(0, delay));
 }
 
-async function runReservationNowAsync(id) {
-  const reservation = await getReservation(id);
-  if (!reservation) return;
+async function workerTick() {
+  if (workerTickInFlight) return wakeWorker(workerPollMs);
+  workerTickInFlight = true;
 
-  const child = spawn(process.execPath, [agentScriptFor(reservation)], {
-    cwd: process.cwd(),
-    env: reservationEnv(reservation),
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  try {
+    const now = new Date();
+    if (Date.now() - lastRecoveryAt >= workerStaleMs) {
+      const recovered = await recoverStaleReservations(now, {
+        staleMs: workerStaleMs,
+        maxAttempts: workerMaxAttempts,
+      });
+      if (recovered.length) console.log(`Worker recuperó ${recovered.length} solicitud(es) interrumpida(s).`);
+      lastRecoveryAt = Date.now();
+    }
 
-  let stdout = "";
-  let stderr = "";
-  let lastProgressFlushAt = 0;
+    const capacity = Math.max(0, workerConcurrency - activeJobs.size);
+    if (capacity > 0) {
+      const due = await claimDueReservations(now, reservationIsDue, {
+        limit: capacity,
+        workerId,
+      });
 
-  const flushProgress = async () => {
-    const now = Date.now();
-    if (now - lastProgressFlushAt < 2000) return;
-    lastProgressFlushAt = now;
-    await updateReservation(id, (current) => ({
-      ...current,
-      lastStdout: trimLog(stdout),
-      lastStderr: trimLog(stderr),
-      status: current.status === "running" ? "running" : current.status,
-      lastRunAt: current.lastRunAt || new Date().toISOString(),
-    })).catch(() => {});
-  };
-
-  child.stdout.on("data", (chunk) => {
-    stdout += chunk.toString();
-    flushProgress();
-  });
-  child.stderr.on("data", (chunk) => {
-    stderr += chunk.toString();
-    flushProgress();
-  });
-  child.on("close", async (code) => {
-    const finalStatus = statusFromExitCode(code);
-    await updateReservation(id, (current) => ({
-      ...current,
-      lastRunAt: new Date().toISOString(),
-      lastStdout: trimLog(stdout),
-      lastStderr: trimLog(stderr),
-      status: finalStatus,
-      lastError: finalStatus === "failed" ? trimLog(stderr || stdout || `Proceso terminó con código ${code}`) : null,
-    }));
-  });
-}
-
-function statusFromExitCode(code) {
-  if (code === 0) return "done";
-  if (code === 2) return "dry_run";
-  return "failed";
-}
-
-async function runDueReservations() {
-  const due = await claimDueReservations(new Date(), reservationIsDue);
-  for (const reservation of due) {
-    runReservationNow(reservation.id);
+      for (const reservation of due) {
+        const execution = executeReservation(reservation)
+          .catch(async (error) => {
+            const detail = error instanceof Error ? error.stack || error.message : String(error);
+            console.error(`Reserva ${reservation.id}: ${detail}`);
+            await updateReservation(reservation.id, (current) => ({
+              ...current,
+              status: "failed",
+              completedAt: new Date().toISOString(),
+              lastError: detail,
+              workerId: null,
+            })).catch(() => {});
+          })
+          .finally(() => {
+            activeJobs.delete(reservation.id);
+            wakeWorker();
+          });
+        activeJobs.set(reservation.id, execution);
+      }
+    }
+  } catch (error) {
+    console.error("Falló el ciclo del worker:", error instanceof Error ? error.stack || error.message : error);
+  } finally {
+    workerTickInFlight = false;
+    const alignedDelay = workerPollMs - (Date.now() % workerPollMs);
+    wakeWorker(alignedDelay);
   }
 }
 
-function reservationEnv(reservation) {
-  if (usesJockeyLikeAgent(reservation.target)) return jockeyReservationEnv(reservation);
-
+function makeImmediate(reservation, initialLog) {
+  const now = new Date();
+  const runDate = formatIsoDate(now);
+  const runTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   return {
-    ...process.env,
-    GOLF_DATE: reservation.playDate,
-    GOLF_MEMBER_IDS: reservation.memberIds.join(","),
-    GOLF_PLAYERS_DATA: JSON.stringify(
-      reservation.playerData || reservation.memberIds.map((memberId) => ({ memberId, documentId: "" })),
-    ),
-    GOLF_PLAYERS: String(reservation.players || reservation.memberIds.length),
-    GOLF_BOOKING_TEXT: reservation.bookingText || process.env.GOLF_BOOKING_TEXT || "",
-    GOLF_TIME_WINDOW_START: reservation.timeWindowStart || process.env.GOLF_TIME_WINDOW_START || "12:30",
-    GOLF_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.GOLF_TIME_WINDOW_END || "14:30",
-    GOLF_CONFIRM_BOOKING: process.env.GOLF_CONFIRM_BOOKING || "true",
-    GOLF_HEADLESS: process.env.GOLF_HEADLESS || "true",
-    GOLF_MAX_ATTEMPTS: process.env.GOLF_MANUAL_MAX_ATTEMPTS || "1",
-    GOLF_POLL_SECONDS: process.env.GOLF_MANUAL_POLL_SECONDS || "2",
-    GOLF_RESERVATION_SETTLE_SECONDS: process.env.GOLF_RESERVATION_SETTLE_SECONDS || "240",
-    GOLF_BASE_RESERVATION_SECONDS: process.env.GOLF_BASE_RESERVATION_SECONDS || "240",
-    GOLF_RESERVATION_TRANSITION_SECONDS: process.env.GOLF_RESERVATION_TRANSITION_SECONDS || "90",
+    ...reservation,
+    status: "pending",
+    runMode: "manual",
+    scheduledRunAtLocal: reservation.runAtLocal,
+    runDate,
+    runTime,
+    runAtLocal: `${runDate}T${runTime}:${String(now.getSeconds()).padStart(2, "0")}`,
+    lastRunAt: null,
+    claimedAt: null,
+    startedAt: null,
+    completedAt: null,
+    heartbeatAt: null,
+    workerId: null,
+    lastError: null,
+    lastStdout: initialLog,
+    lastStderr: "",
   };
-}
-
-function jockeyReservationEnv(reservation) {
-  const target = targets[normalizeTarget(reservation.target)];
-  const memberIds = reservation.memberIds || [];
-  const firstMemberId = memberIds[0] || "";
-  const username = target.username() || firstMemberId;
-  return {
-    ...process.env,
-    JOCKEY_URL: target.siteUrl(),
-    JOCKEY_SITE_NAME: target.siteName,
-    JOCKEY_DATE: reservation.playDate,
-    JOCKEY_MEMBER_IDS: memberIds.join(","),
-    JOCKEY_PLAYERS_DATA: JSON.stringify(
-      reservation.playerData || memberIds.map((memberId) => ({ memberId, documentId: "" })),
-    ),
-    JOCKEY_PLAYERS: String(reservation.players || memberIds.length),
-    JOCKEY_TOURNAMENT_TEXT: reservation.bookingText || target.defaultBookingText(),
-    JOCKEY_TIME_WINDOW_START: reservation.timeWindowStart || process.env.JOCKEY_TIME_WINDOW_START || "12:30",
-    JOCKEY_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.JOCKEY_TIME_WINDOW_END || "14:30",
-    JOCKEY_CONFIRM_BOOKING: process.env.JOCKEY_CONFIRM_BOOKING || "false",
-    JOCKEY_HEADLESS: process.env.JOCKEY_HEADLESS || process.env.GOLF_HEADLESS || "true",
-    JOCKEY_USERNAME: username,
-    JOCKEY_PASSWORD: target.password() || username,
-  };
-}
-
-function agentScriptFor(reservation) {
-  return targets[normalizeTarget(reservation.target)].script;
-}
-
-function usesJockeyLikeAgent(target) {
-  return ["jockey-palermo", "club-newman"].includes(normalizeTarget(target));
 }
 
 function reservationIsDue(reservation, now) {
   const runAt = reservationRunAt(reservation);
-  return runAt ? runAt <= now : false;
+  if (!runAt) return false;
+  const leadMs = reservation.runMode === "manual" ? 0 : workerPrewarmMs;
+  return runAt.getTime() - leadMs <= now.getTime();
 }
 
 function reservationRunAt(reservation) {
@@ -393,10 +359,6 @@ function readJson(request) {
   });
 }
 
-function trimLog(value) {
-  return String(value || "").slice(-8000);
-}
-
 function loadEnvFile(fileName) {
   const filePath = path.resolve(fileName);
   if (!fs.existsSync(filePath)) return;
@@ -413,6 +375,11 @@ function booleanEnv(name, fallback) {
   const value = process.env[name];
   if (value === undefined) return fallback;
   return ["1", "true", "yes", "si", "sí"].includes(value.toLowerCase());
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
 function isTime(value) {

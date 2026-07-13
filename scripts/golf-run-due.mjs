@@ -1,140 +1,47 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { spawnSync } from "node:child_process";
-import { claimDueReservations, initStore, updateReservation } from "./golf-store.mjs";
+import { claimDueReservations, closeStore, initStore, recoverStaleReservations } from "./golf-store.mjs";
+import { executeReservation } from "./golf-reservation-runner.mjs";
 
 process.env.TZ = "America/Argentina/Buenos_Aires";
 loadEnvFile(".env.golf");
 
-await initStore();
-
-const targets = {
-  "golf-tracker": {
-    script: "scripts/golf-agent.mjs",
-  },
-  "jockey-palermo": {
-    script: "scripts/jockey-agent.mjs",
-    siteName: "JOCKEY",
-    siteUrl: () => process.env.JOCKEY_URL || "https://golf.e-jockeyclub.org.ar/golf/login.php",
-    defaultBookingText: () => process.env.JOCKEY_TOURNAMENT_TEXT || "AZUL",
-    username: () => process.env.JOCKEY_USERNAME,
-    password: () => process.env.JOCKEY_PASSWORD,
-  },
-  "club-newman": {
-    script: "scripts/jockey-agent.mjs",
-    siteName: "NEWMAN",
-    siteUrl: () => process.env.NEWMAN_URL || "https://www.clubnewmangolf.com/golf/login.php",
-    defaultBookingText: () => process.env.NEWMAN_TOURNAMENT_TEXT || "",
-    username: () => process.env.NEWMAN_USERNAME || process.env.JOCKEY_USERNAME,
-    password: () => process.env.NEWMAN_PASSWORD || process.env.JOCKEY_PASSWORD,
-  },
-};
-
 const now = process.env.GOLF_DUE_AT ? dateTimeFromLocal(process.env.GOLF_DUE_AT) : new Date();
-const dueReservations = await claimDueReservations(now, reservationIsDue);
+const concurrency = positiveNumber(process.env.GOLF_WORKER_CONCURRENCY, 2);
+const workerId = `cron-${process.pid}-${Date.now()}`;
 
-if (!dueReservations.length) {
-  console.log(`No hay reservas pendientes para ejecutar ahora (${formatLocalDateTime(now)}).`);
-  process.exit(0);
-}
-
-for (const reservation of dueReservations) {
-  console.log(`Ejecutando reserva ${reservation.id} para jugar ${reservation.playDate}`);
-
-  const result = spawnSync(process.execPath, [agentScriptFor(reservation)], {
-    cwd: process.cwd(),
-    env: reservationEnv(reservation),
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+try {
+  await initStore();
+  await recoverStaleReservations(now, {
+    staleMs: positiveNumber(process.env.GOLF_WORKER_STALE_MS, 15000),
+    maxAttempts: positiveNumber(process.env.GOLF_WORKER_MAX_ATTEMPTS, 2),
   });
 
-  const finalStatus = statusFromExitCode(result.status);
-  await updateReservation(reservation.id, (current) => ({
-    ...current,
-    lastStdout: trimLog(result.stdout),
-    lastStderr: trimLog(result.stderr),
-    lastRunAt: new Date().toISOString(),
-    status: finalStatus,
-    lastError: finalStatus === "failed"
-      ? trimLog(result.stderr || result.stdout || `Proceso terminó con código ${result.status}`)
-      : null,
-  }));
-
-  if (result.status === 0) {
-    console.log(`Reserva ${reservation.id} completada.`);
-  } else if (result.status === 2) {
-    console.log(`Reserva ${reservation.id} quedó en modo prueba; no se confirmó.`);
-  } else {
-    console.error(`Reserva ${reservation.id} falló.`);
-    console.error(result.stderr || result.stdout || `Proceso terminó con código ${result.status}`);
+  const dueReservations = await claimDueReservations(now, reservationIsDue, { workerId });
+  if (!dueReservations.length) {
+    console.log(`No hay reservas pendientes para ejecutar ahora (${formatLocalDateTime(now)}).`);
   }
-}
 
-function statusFromExitCode(code) {
-  if (code === 0) return "done";
-  if (code === 2) return "dry_run";
-  return "failed";
-}
-
-function reservationEnv(reservation) {
-  if (usesJockeyLikeAgent(reservation.target)) return jockeyReservationEnv(reservation);
-
-  return {
-    ...process.env,
-    GOLF_DATE: reservation.playDate,
-    GOLF_MEMBER_IDS: reservation.memberIds.join(","),
-    GOLF_PLAYERS_DATA: JSON.stringify(
-      reservation.playerData || reservation.memberIds.map((memberId) => ({ memberId, documentId: "" })),
-    ),
-    GOLF_PLAYERS: String(reservation.players || reservation.memberIds.length),
-    GOLF_BOOKING_TEXT: reservation.bookingText || process.env.GOLF_BOOKING_TEXT || "",
-    GOLF_TIME_WINDOW_START: reservation.timeWindowStart || process.env.GOLF_TIME_WINDOW_START || "12:30",
-    GOLF_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.GOLF_TIME_WINDOW_END || "14:30",
-    GOLF_CONFIRM_BOOKING: process.env.GOLF_CONFIRM_BOOKING || "true",
-    GOLF_HEADLESS: process.env.GOLF_HEADLESS || "true",
-    GOLF_RESERVATION_SETTLE_SECONDS: process.env.GOLF_RESERVATION_SETTLE_SECONDS || "240",
-    GOLF_BASE_RESERVATION_SECONDS: process.env.GOLF_BASE_RESERVATION_SECONDS || "240",
-    GOLF_RESERVATION_TRANSITION_SECONDS: process.env.GOLF_RESERVATION_TRANSITION_SECONDS || "90",
-  };
-}
-
-function jockeyReservationEnv(reservation) {
-  const target = targets[normalizeTarget(reservation.target)];
-  const memberIds = reservation.memberIds || [];
-  const firstMemberId = memberIds[0] || "";
-  const username = target.username() || firstMemberId;
-  return {
-    ...process.env,
-    JOCKEY_URL: target.siteUrl(),
-    JOCKEY_SITE_NAME: target.siteName,
-    JOCKEY_DATE: reservation.playDate,
-    JOCKEY_MEMBER_IDS: memberIds.join(","),
-    JOCKEY_PLAYERS_DATA: JSON.stringify(
-      reservation.playerData || memberIds.map((memberId) => ({ memberId, documentId: "" })),
-    ),
-    JOCKEY_PLAYERS: String(reservation.players || memberIds.length),
-    JOCKEY_TOURNAMENT_TEXT: reservation.bookingText || target.defaultBookingText(),
-    JOCKEY_TIME_WINDOW_START: reservation.timeWindowStart || process.env.JOCKEY_TIME_WINDOW_START || "12:30",
-    JOCKEY_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.JOCKEY_TIME_WINDOW_END || "14:30",
-    JOCKEY_CONFIRM_BOOKING: process.env.JOCKEY_CONFIRM_BOOKING || "false",
-    JOCKEY_HEADLESS: process.env.JOCKEY_HEADLESS || process.env.GOLF_HEADLESS || "true",
-    JOCKEY_USERNAME: username,
-    JOCKEY_PASSWORD: target.password() || username,
-  };
-}
-
-function agentScriptFor(reservation) {
-  return targets[normalizeTarget(reservation.target)].script;
-}
-
-function normalizeTarget(value) {
-  const target = String(value || "golf-tracker").trim().toLowerCase();
-  return targets[target] ? target : "golf-tracker";
-}
-
-function usesJockeyLikeAgent(target) {
-  return ["jockey-palermo", "club-newman"].includes(normalizeTarget(target));
+  for (let index = 0; index < dueReservations.length; index += concurrency) {
+    const batch = dueReservations.slice(index, index + concurrency);
+    const results = await Promise.all(batch.map(async (reservation) => {
+      console.log(`Ejecutando reserva ${reservation.id} para jugar ${reservation.playDate}`);
+      const result = await executeReservation(reservation);
+      if (result.status === "done") {
+        console.log(`Reserva ${reservation.id} completada y verificada.`);
+      } else if (result.status === "dry_run") {
+        console.log(`Reserva ${reservation.id} quedó en modo prueba; no se confirmó.`);
+      } else {
+        console.error(`Reserva ${reservation.id} falló.`);
+        console.error(result.stderr || result.stdout);
+      }
+      return result;
+    }));
+    if (results.some((result) => result.status === "failed")) process.exitCode = 1;
+  }
+} finally {
+  await closeStore();
 }
 
 function reservationIsDue(reservation, at) {
@@ -147,10 +54,6 @@ function reservationRunAt(reservation) {
   if (reservation.runDate && reservation.runTime) return dateTimeFromLocal(`${reservation.runDate}T${reservation.runTime}:00`);
   if (reservation.bookingOpenDate) return dateTimeFromLocal(`${reservation.bookingOpenDate}T08:00:00`);
   return null;
-}
-
-function trimLog(value) {
-  return String(value || "").slice(-8000);
 }
 
 function loadEnvFile(fileName) {
@@ -174,4 +77,9 @@ function dateTimeFromLocal(value) {
 
 function formatLocalDateTime(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function positiveNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
 }
