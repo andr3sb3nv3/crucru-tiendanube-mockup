@@ -92,8 +92,9 @@ async function runAgent() {
       console.log(`La grilla todavía no está lista: ${error instanceof Error ? error.message : error}`);
     }
     if (slot) {
+      let panel = null;
       try {
-        await clickSlot(slot);
+        panel = await clickSlot(slot);
         await page.waitForTimeout(700);
         await capture("03-slot-selected");
 
@@ -104,7 +105,12 @@ async function runAgent() {
           return;
         }
 
-        await reservePrimaryPlayer();
+        if (["add-players", "add-player-form"].includes(panel.type)) {
+          console.log(`Retomo la reserva base existente${panel.time ? ` de las ${panel.time}` : ""}.`);
+        } else {
+          await reservePrimaryPlayer();
+          await waitForBaseReservation();
+        }
       } catch (error) {
         if (reservationWriteStarted || attempt >= config.maxAttempts || searchDeadlineReached()) throw error;
         console.log(`El turno todavía no permitió iniciar la reserva: ${error instanceof Error ? error.message : error}`);
@@ -113,8 +119,7 @@ async function runAgent() {
         continue;
       }
 
-      await waitForBaseReservation();
-      await addLinePlayersIfNeeded();
+      await addLinePlayersIfNeeded({ formAlreadyOpen: panel.type === "add-player-form" });
       await waitForFinalReservationCompletion();
       await capture("04-reservation-confirmed");
       console.log("Solicitud de reserva enviada.");
@@ -202,7 +207,7 @@ async function waitForScheduleReady() {
   }
 }
 
-async function clickSlot(slot) {
+async function clickSlot(slot, options = {}) {
   const pointNames = ["centro", "acción derecha", "botón interno", "dom click", "doble click centro"];
 
   for (let attempt = 1; attempt <= pointNames.length; attempt += 1) {
@@ -217,7 +222,8 @@ async function clickSlot(slot) {
 
     if (attempt === 3 && await clickInnerSlotAction(slot)) {
       await page.waitForTimeout(900);
-      if (await reservationPanelIsOpen()) return;
+      const panel = await reservationPanelState();
+      if (panel) return handleOpenedSlotPanel(panel, options);
       console.log(`Click en turno sin cartel visible (${pointNames[attempt - 1]}).`);
       continue;
     }
@@ -225,7 +231,8 @@ async function clickSlot(slot) {
     if (attempt === 4) {
       await dispatchSlotClick(slot);
       await page.waitForTimeout(900);
-      if (await reservationPanelIsOpen()) return;
+      const panel = await reservationPanelState();
+      if (panel) return handleOpenedSlotPanel(panel, options);
       console.log(`Click en turno sin cartel visible (${pointNames[attempt - 1]}).`);
       continue;
     }
@@ -243,11 +250,28 @@ async function clickSlot(slot) {
     }
     await page.waitForTimeout(900);
 
-    if (await reservationPanelIsOpen()) return;
+    const panel = await reservationPanelState();
+    if (panel) return handleOpenedSlotPanel(panel, options);
     console.log(`Click en turno sin cartel visible (${pointNames[attempt - 1]}).`);
   }
 
   throw new Error("Encontré un turno, pero no se abrió el cartel para reservarlo.");
+}
+
+async function handleOpenedSlotPanel(panel, options) {
+  if (panel.type !== "own-line") return panel;
+  if (options.redirectedToOwnLine) {
+    throw new Error(`Golf Tracker informó que la línea propia es ${panel.time}, pero tampoco permitió abrirla.`);
+  }
+
+  console.log(`Golf Tracker informó que el usuario ya tiene salida a las ${panel.time}; retomo esa línea.`);
+  await closeInvalidSelectionModal(panel.modal);
+  const ownSlot = await findExactAvailableSlot(panel.time);
+  if (!ownSlot) {
+    throw new Error(`Golf Tracker indicó que la línea propia es ${panel.time}, pero no encontré un espacio visible en esa fila.`);
+  }
+  const result = await clickSlot(ownSlot, { redirectedToOwnLine: true });
+  return { ...result, time: panel.time };
 }
 
 async function clickInnerSlotAction(slot) {
@@ -281,9 +305,43 @@ async function dispatchSlotClick(slot) {
   }).catch(() => {});
 }
 
-async function reservationPanelIsOpen() {
-  if (await waitForAddPlayersButton(250)) return true;
-  return Boolean(await waitForReservationButton(1200));
+async function reservationPanelState() {
+  const invalidSelection = await invalidSelectionPanel();
+  if (invalidSelection) return invalidSelection;
+  if (await waitForAddPlayersButton(250)) return { type: "add-players" };
+  if (await addedPlayerFormIsOpen()) return { type: "add-player-form" };
+  if (await waitForReservationButton(1200)) return { type: "reserve" };
+  return invalidSelectionPanel();
+}
+
+async function addedPlayerFormIsOpen() {
+  return Boolean(await firstVisible([
+    page.locator("ngb-modal-window, .modal.show").filter({ hasText: /verificar matr[ií]cula/i }).filter({ hasText: /matr[ií]cula|documento/i }).first(),
+  ], 300));
+}
+
+async function invalidSelectionPanel() {
+  const modal = await firstVisible([
+    page.locator("ngb-modal-window, .modal.show").filter({ hasText: /selecci[oó]n incorrecta/i }).first(),
+  ], 200);
+  if (!modal) return null;
+
+  const text = normalizeSpaces(await modal.innerText().catch(() => ""));
+  const match = text.match(/horario de salida es(?:\s*\d{4}-\d{2}-\d{2})?\s*(\d{1,2}:\d{2})/i);
+  if (!match) return null;
+  return { type: "own-line", time: match[1], modal };
+}
+
+async function closeInvalidSelectionModal(modal) {
+  const close = await firstVisible([
+    modal.locator(".btn-close, button[aria-label*='close' i], button[aria-label*='cerrar' i]").first(),
+    modal.locator("button").filter({ hasText: /cerrar|aceptar|entendido|×/i }).first(),
+    modal.locator("button").first(),
+  ], 1000);
+  if (!close) throw new Error("Golf Tracker informó la línea propia, pero no pude cerrar el aviso.");
+  await close.click({ force: true });
+  await modal.waitFor({ state: "hidden", timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(300);
 }
 
 async function reservePrimaryPlayer() {
@@ -300,7 +358,7 @@ async function reservePrimaryPlayer() {
   await page.waitForTimeout(1200);
 }
 
-async function addLinePlayersIfNeeded() {
+async function addLinePlayersIfNeeded(options = {}) {
   const extraPlayers = config.playerData.slice(1);
   if (!extraPlayers.length) return;
 
@@ -309,14 +367,17 @@ async function addLinePlayersIfNeeded() {
   for (let index = 0; index < extraPlayers.length; index += 1) {
     const player = extraPlayers[index];
     const isLast = index === extraPlayers.length - 1;
-    const addPlayers = await waitForAddPlayersButton();
-    if (!addPlayers) {
-      throw new Error(`La reserva base se creó, pero no encontré cómo agregar la matrícula ${player.memberId}.`);
-    }
+    const formAlreadyOpen = Boolean(options.formAlreadyOpen && index === 0);
+    if (!formAlreadyOpen) {
+      const addPlayers = await waitForAddPlayersButton();
+      if (!addPlayers) {
+        throw new Error(`La reserva base se creó, pero no encontré cómo agregar la matrícula ${player.memberId}.`);
+      }
 
-    await addPlayers.click({ force: true }).catch(() => {});
-    await page.waitForLoadState("networkidle").catch(() => {});
-    await page.waitForTimeout(800);
+      await addPlayers.click({ force: true }).catch(() => {});
+      await page.waitForLoadState("networkidle").catch(() => {});
+      await page.waitForTimeout(800);
+    }
 
     const fields = await visibleMemberFields();
     if (!fields.length) {
@@ -423,6 +484,10 @@ async function reserveAddedPlayer(player, options = {}) {
   }
 
   console.log(`Reservando jugador ${player.memberId}.`);
+  if (!reservationWriteStarted) {
+    reservationWriteStarted = true;
+    console.log(RESERVATION_WRITE_STARTED_MARKER);
+  }
   await reserve.click({ force: true });
   await page.waitForLoadState("networkidle").catch(() => {});
   await waitForReservationTransitionStart(player.memberId, { requireProcessing: Boolean(options.isLast) });
@@ -887,16 +952,8 @@ async function topDateControlButton() {
 
 async function findSlot() {
   if (config.time) {
-    const exactTime = new RegExp(`(^|\\D)${escapeRegExp(config.time)}(\\D|$)`);
-    const candidates = [
-      page.getByRole("button", { name: exactTime }).first(),
-      page.getByRole("link", { name: exactTime }).first(),
-      page.locator("button, a, td, div").filter({ hasText: exactTime }).first(),
-    ];
-
-    for (const candidate of candidates) {
-      if (await isVisible(candidate, 2000)) return candidate;
-    }
+    const exactSlot = await findExactAvailableSlot(config.time);
+    if (exactSlot) return exactSlot;
   }
 
   if (config.players > 1) {
@@ -920,6 +977,23 @@ async function findSlot() {
   if (fallbackSlot) return fallbackSlot;
 
   return null;
+}
+
+async function findExactAvailableSlot(time) {
+  const matches = uniqueSlotCandidates(await collectSlotCandidates(
+    page.locator(".test_cell_business"),
+    false,
+    { strictAvailable: true },
+  ))
+    .filter((candidate) => candidate.time === time)
+    .sort((a, b) => a.box.x - b.box.x);
+
+  for (const candidate of matches) {
+    await candidate.item.scrollIntoViewIfNeeded().catch(() => {});
+    await page.waitForTimeout(25);
+    if ((await topHitInfo(candidate.item)).isTopMost) return candidate.item;
+  }
+  return matches[0]?.item || null;
 }
 
 async function bestSlotForPlayerCount(respectWindow) {
