@@ -31,7 +31,6 @@ const config = {
   baseReservationSeconds: Number(env("GOLF_BASE_RESERVATION_SECONDS", "240")),
   transitionSeconds: Number(env("GOLF_RESERVATION_TRANSITION_SECONDS", "90")),
   notBeforeLocal: env("GOLF_NOT_BEFORE_LOCAL", ""),
-  searchDeadlineLocal: env("GOLF_SEARCH_DEADLINE_LOCAL", ""),
 };
 
 fs.mkdirSync(config.outputDir, { recursive: true });
@@ -39,16 +38,11 @@ config.memberIds = config.playerData.map((player) => player.memberId);
 if (config.memberIds.length) config.players = config.memberIds.length;
 
 const browser = await chromium.launch({ headless: config.headless });
-const storageStatePath = path.join(config.outputDir, "storage-state.json");
-const contextOptions = {
+const context = await browser.newContext({
   locale: "es-AR",
   timezoneId: "America/Argentina/Buenos_Aires",
-};
-if (isUsableStorageState(storageStatePath)) contextOptions.storageState = storageStatePath;
-const context = await browser.newContext(contextOptions);
+});
 const page = await context.newPage();
-let reservationWriteStarted = false;
-let selectedSlotTime = "";
 
 try {
   await runAgent();
@@ -57,7 +51,7 @@ try {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 } finally {
-  await context.storageState({ path: storageStatePath });
+  await context.storageState({ path: path.join(config.outputDir, "storage-state.json") });
   await browser.close();
 }
 
@@ -76,55 +70,29 @@ async function runAgent() {
   await waitUntilNotBefore();
 
   for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
-    if (!reservationWriteStarted && searchDeadlineReached()) {
-      throw new Error(`Terminó la ventana del primer intento (${config.searchDeadlineLocal.replace("T", " ")}); preparo el reintento programado.`);
-    }
     console.log(
       `Buscando turno ${config.date} entre ${config.timeWindowStart} y ${config.timeWindowEnd} (${attempt}/${config.maxAttempts})`,
     );
-    let slot = null;
-    try {
-      await chooseBookingCriteria();
-      await waitForScheduleReady();
-      await closeFloatingChatIfVisible();
-      slot = await findSlot();
-      if (booleanEnv("GOLF_CAPTURE_GRID", false)) await capture("debug-grid-before-slot");
-    } catch (error) {
-      if (attempt >= config.maxAttempts || searchDeadlineReached()) throw error;
-      console.log(`La grilla todavía no está lista: ${error instanceof Error ? error.message : error}`);
-    }
+    await chooseBookingCriteria();
+    await waitForScheduleReady();
+    await closeFloatingChatIfVisible();
+
+    const slot = await findSlot();
     if (slot) {
-      let panel = null;
-      try {
-        selectedSlotTime = firstTimeInText(normalizeSpaces(await slot.innerText().catch(() => ""))) || selectedSlotTime;
-        panel = await clickSlot(slot);
-        await page.waitForTimeout(700);
-        await capture("03-slot-selected");
+      await clickSlot(slot);
+      await page.waitForTimeout(700);
+      await capture("03-slot-selected");
 
-        if (!config.confirmBooking) {
-          console.log("Turno encontrado. Dry run activo: no se confirmó la reserva.");
-          console.log("Para confirmar, usar GOLF_CONFIRM_BOOKING=true.");
-          process.exitCode = 2;
-          return;
-        }
-
-        if (["add-players", "add-player-form", "line-complete"].includes(panel.type)) {
-          console.log(`Retomo la reserva base existente${panel.time ? ` de las ${panel.time}` : ""}.`);
-        } else {
-          await reservePrimaryPlayer();
-          await waitForBaseReservation();
-        }
-      } catch (error) {
-        if (reservationWriteStarted || attempt >= config.maxAttempts || searchDeadlineReached()) throw error;
-        console.log(`El turno todavía no permitió iniciar la reserva: ${error instanceof Error ? error.message : error}`);
-        await capture(`03-slot-not-ready-attempt-${attempt}`);
-        await prepareNextSearch(attempt);
-        continue;
+      if (!config.confirmBooking) {
+        console.log("Turno encontrado. Dry run activo: no se confirmó la reserva.");
+        console.log("Para confirmar, usar GOLF_CONFIRM_BOOKING=true.");
+        process.exitCode = 2;
+        return;
       }
 
-      if (panel.type !== "line-complete") {
-        await addLinePlayersIfNeeded({ formAlreadyOpen: panel.type === "add-player-form" });
-      }
+      await reservePrimaryPlayer();
+      await waitForBaseReservation();
+      await addLinePlayersIfNeeded();
       await waitForFinalReservationCompletion();
       await capture("04-reservation-confirmed");
       console.log("Solicitud de reserva enviada.");
@@ -132,42 +100,16 @@ async function runAgent() {
     }
 
     await capture(`02-no-slot-attempt-${attempt}`);
-    if (attempt < config.maxAttempts && !searchDeadlineReached()) {
-      await prepareNextSearch(attempt);
+    if (attempt < config.maxAttempts) {
+      await page.waitForTimeout(config.pollSeconds * 1000);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle").catch(() => {});
     }
   }
 
   throw new Error(
     `No encontré un turno visible para ${config.date} entre ${config.timeWindowStart} y ${config.timeWindowEnd}.`,
   );
-}
-
-function searchDeadlineReached() {
-  if (!config.searchDeadlineLocal) return false;
-  const deadline = new Date(config.searchDeadlineLocal);
-  return Number.isFinite(deadline.getTime()) && Date.now() >= deadline.getTime();
-}
-
-async function prepareNextSearch(attempt) {
-  console.log(`Recargo la grilla para el intento ${attempt + 1}/${config.maxAttempts}.`);
-  await page.waitForTimeout(config.pollSeconds * 1000);
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForLoadState("networkidle").catch(() => {});
-}
-
-async function waitUntilNotBefore() {
-  if (!config.notBeforeLocal) return;
-  const target = new Date(config.notBeforeLocal);
-  if (!Number.isFinite(target.getTime())) return;
-
-  const initialWait = target.getTime() - Date.now();
-  if (initialWait <= 0) return;
-  console.log(`Sesión preparada. Espero hasta ${config.notBeforeLocal.replace("T", " ")} para consultar la grilla.`);
-
-  while (Date.now() < target.getTime()) {
-    await page.waitForTimeout(Math.min(1000, Math.max(1, target.getTime() - Date.now())));
-  }
-  console.log("Horario de apertura alcanzado; comienzo la búsqueda.");
 }
 
 async function closeFloatingChatIfVisible() {
@@ -178,16 +120,6 @@ async function closeFloatingChatIfVisible() {
   if (!close) return;
   await close.click({ force: true }).catch(() => {});
   await page.waitForTimeout(250);
-}
-
-function isUsableStorageState(filePath) {
-  if (!fs.existsSync(filePath)) return false;
-  try {
-    const state = JSON.parse(fs.readFileSync(filePath, "utf8"));
-    return Array.isArray(state.cookies) && Array.isArray(state.origins);
-  } catch {
-    return false;
-  }
 }
 
 async function waitForScheduleReady() {
@@ -212,7 +144,7 @@ async function waitForScheduleReady() {
   }
 }
 
-async function clickSlot(slot, options = {}) {
+async function clickSlot(slot) {
   const pointNames = ["centro", "acción derecha", "botón interno", "dom click", "doble click centro"];
 
   for (let attempt = 1; attempt <= pointNames.length; attempt += 1) {
@@ -227,8 +159,7 @@ async function clickSlot(slot, options = {}) {
 
     if (attempt === 3 && await clickInnerSlotAction(slot)) {
       await page.waitForTimeout(900);
-      const panel = await reservationPanelState();
-      if (panel) return handleOpenedSlotPanel(panel, options);
+      if (await reservationPanelIsOpen()) return;
       console.log(`Click en turno sin cartel visible (${pointNames[attempt - 1]}).`);
       continue;
     }
@@ -236,8 +167,7 @@ async function clickSlot(slot, options = {}) {
     if (attempt === 4) {
       await dispatchSlotClick(slot);
       await page.waitForTimeout(900);
-      const panel = await reservationPanelState();
-      if (panel) return handleOpenedSlotPanel(panel, options);
+      if (await reservationPanelIsOpen()) return;
       console.log(`Click en turno sin cartel visible (${pointNames[attempt - 1]}).`);
       continue;
     }
@@ -255,39 +185,11 @@ async function clickSlot(slot, options = {}) {
     }
     await page.waitForTimeout(900);
 
-    const panel = await reservationPanelState();
-    if (panel) return handleOpenedSlotPanel(panel, options);
+    if (await reservationPanelIsOpen()) return;
     console.log(`Click en turno sin cartel visible (${pointNames[attempt - 1]}).`);
   }
 
   throw new Error("Encontré un turno, pero no se abrió el cartel para reservarlo.");
-}
-
-async function handleOpenedSlotPanel(panel, options) {
-  if (panel.type !== "own-line") return panel;
-  if (options.redirectedToOwnLine) {
-    throw new Error(`Golf Tracker informó que la línea propia es ${panel.time}, pero tampoco permitió abrirla.`);
-  }
-
-  console.log(`Golf Tracker informó que el usuario ya tiene salida a las ${panel.time}; retomo esa línea.`);
-  selectedSlotTime = panel.time;
-  await closeInvalidSelectionModal(panel.modal);
-  let ownSlot = await findExactAvailableSlot(panel.time);
-  if (!ownSlot && await reservingCountForSelectedLine() > 0) {
-    console.log(`La línea propia ${panel.time} todavía está procesando jugadores; espero que se estabilice.`);
-    await waitForSelectedLineSettled("antes de retomar la línea existente");
-    ownSlot = await findExactAvailableSlot(panel.time);
-  }
-  if (!ownSlot) {
-    const occupied = await occupiedColumnsForSelectedLine();
-    if (occupied >= config.players) {
-      console.log(`La línea propia ${panel.time} ya tiene ${occupied} espacios ocupados; no agrego jugadores duplicados.`);
-      return { type: "line-complete", time: panel.time };
-    }
-    throw new Error(`Golf Tracker indicó que la línea propia es ${panel.time}, pero no encontré un espacio visible en esa fila.`);
-  }
-  const result = await clickSlot(ownSlot, { redirectedToOwnLine: true });
-  return { ...result, time: panel.time };
 }
 
 async function clickInnerSlotAction(slot) {
@@ -321,43 +223,12 @@ async function dispatchSlotClick(slot) {
   }).catch(() => {});
 }
 
-async function reservationPanelState() {
-  const invalidSelection = await invalidSelectionPanel();
-  if (invalidSelection) return invalidSelection;
-  if (await waitForAddPlayersButton(250)) return { type: "add-players" };
-  if (await addedPlayerFormIsOpen()) return { type: "add-player-form" };
-  if (await waitForReservationButton(1200)) return { type: "reserve" };
-  return invalidSelectionPanel();
-}
-
-async function addedPlayerFormIsOpen() {
-  return Boolean(await firstVisible([
-    page.locator("ngb-modal-window, .modal.show").filter({ hasText: /verificar matr[ií]cula/i }).filter({ hasText: /matr[ií]cula|documento/i }).first(),
-  ], 300));
-}
-
-async function invalidSelectionPanel() {
-  const modal = await firstVisible([
-    page.locator("ngb-modal-window, .modal.show").filter({ hasText: /selecci[oó]n incorrecta/i }).first(),
-  ], 200);
-  if (!modal) return null;
-
-  const text = normalizeSpaces(await modal.innerText().catch(() => ""));
-  const match = text.match(/horario de salida es(?:\s*\d{4}-\d{2}-\d{2})?\s*(\d{1,2}:\d{2})/i);
-  if (!match) return null;
-  return { type: "own-line", time: match[1], modal };
-}
-
-async function closeInvalidSelectionModal(modal) {
-  const close = await firstVisible([
-    modal.locator(".btn-close, button[aria-label*='close' i], button[aria-label*='cerrar' i]").first(),
-    modal.locator("button").filter({ hasText: /cerrar|aceptar|entendido|×/i }).first(),
-    modal.locator("button").first(),
-  ], 1000);
-  if (!close) throw new Error("Golf Tracker informó la línea propia, pero no pude cerrar el aviso.");
-  await close.click({ force: true });
-  await modal.waitFor({ state: "hidden", timeout: 3000 }).catch(() => {});
-  await page.waitForTimeout(300);
+async function reservationPanelIsOpen() {
+  if (await waitForAddPlayersButton(250)) return true;
+  if (await firstVisible([
+    page.getByText(/reserva creada|creada con éxito|reservando/i).first(),
+  ], 250)) return true;
+  return Boolean(await reservationActionButton());
 }
 
 async function reservePrimaryPlayer() {
@@ -367,14 +238,26 @@ async function reservePrimaryPlayer() {
     throw new Error("Se abrió el turno, pero no encontré el botón Reservar para el primer jugador.");
   }
 
-  reservationWriteStarted = true;
   console.log(RESERVATION_WRITE_STARTED_MARKER);
   await reserve.click({ force: true });
   await page.waitForLoadState("networkidle").catch(() => {});
   await page.waitForTimeout(1200);
 }
 
-async function addLinePlayersIfNeeded(options = {}) {
+async function waitUntilNotBefore() {
+  if (!config.notBeforeLocal) return;
+
+  const target = new Date(config.notBeforeLocal);
+  if (!Number.isFinite(target.getTime()) || target.getTime() <= Date.now()) return;
+
+  console.log(`Sesión preparada; espero hasta ${config.notBeforeLocal} para buscar el turno.`);
+  while (Date.now() < target.getTime()) {
+    await page.waitForTimeout(Math.min(1000, Math.max(1, target.getTime() - Date.now())));
+  }
+  console.log("Horario de apertura alcanzado; comienzo la búsqueda.");
+}
+
+async function addLinePlayersIfNeeded() {
   const extraPlayers = config.playerData.slice(1);
   if (!extraPlayers.length) return;
 
@@ -383,11 +266,20 @@ async function addLinePlayersIfNeeded(options = {}) {
   for (let index = 0; index < extraPlayers.length; index += 1) {
     const player = extraPlayers[index];
     const isLast = index === extraPlayers.length - 1;
-    const formAlreadyOpen = Boolean(options.formAlreadyOpen && index === 0);
-    if (!formAlreadyOpen) {
-      await waitForSelectedLineSettled(`antes de agregar ${player.memberId}`);
+    const addPlayers = await waitForAddPlayersButton();
+    if (!addPlayers) {
+      throw new Error(`La reserva base se creó, pero no encontré cómo agregar la matrícula ${player.memberId}.`);
     }
-    const fields = await openAddedPlayerForm(player, { formAlreadyOpen });
+
+    await addPlayers.click({ force: true }).catch(() => {});
+    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForTimeout(800);
+
+    const fields = await visibleMemberFields();
+    if (!fields.length) {
+      console.log(`No encontré campo para cargar la matrícula ${player.memberId}.`);
+      continue;
+    }
 
     await fillPlayerData(player, fields);
     await verifyPlayer(player);
@@ -399,36 +291,6 @@ async function addLinePlayersIfNeeded(options = {}) {
   }
 }
 
-async function openAddedPlayerForm(player, options = {}) {
-  if (options.formAlreadyOpen) {
-    const existingFields = await waitForMemberFields(2500);
-    if (existingFields.length) return existingFields;
-  }
-
-  const addPlayers = await waitForAddPlayersButton(8000);
-  if (!addPlayers) {
-    throw new Error(`La línea está estable, pero no encontré cómo agregar la matrícula ${player.memberId}.`);
-  }
-
-  console.log(`Abriendo formulario para ${player.memberId}.`);
-  await addPlayers.click({ force: true });
-  await page.waitForLoadState("networkidle").catch(() => {});
-  const fields = await waitForMemberFields(15000);
-  if (fields.length) return fields;
-
-  throw new Error(`Golf Tracker bloqueó el siguiente espacio, pero no abrió el formulario para ${player.memberId}; detengo la línea para no ocupar otro lugar vacío.`);
-}
-
-async function waitForMemberFields(timeout) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    const fields = await visibleMemberFields();
-    if (fields.length) return fields;
-    await page.waitForTimeout(250);
-  }
-  return [];
-}
-
 async function fillPlayerData(player, fields, options = {}) {
   const licenseField = findField(fields, /matr[ií]cula|licen|socio|member/) || fields[0];
   await fillOneMemberValue(player.memberId, licenseField.locator);
@@ -437,7 +299,8 @@ async function fillPlayerData(player, fields, options = {}) {
 
   const documentField = findField(fields, /dni|document|doc\.?|identidad/) || fields.find((field) => field !== licenseField);
   if (!documentField) {
-    throw new Error(`No encontré campo de DNI/documento para la matrícula ${player.memberId}.`);
+    console.log(`No encontré campo de DNI/documento para la matrícula ${player.memberId}.`);
+    return;
   }
 
   await fillOneMemberValue(player.documentId, documentField.locator);
@@ -517,10 +380,6 @@ async function reserveAddedPlayer(player, options = {}) {
   }
 
   console.log(`Reservando jugador ${player.memberId}.`);
-  if (!reservationWriteStarted) {
-    reservationWriteStarted = true;
-    console.log(RESERVATION_WRITE_STARTED_MARKER);
-  }
   await reserve.click({ force: true });
   await page.waitForLoadState("networkidle").catch(() => {});
   await waitForReservationTransitionStart(player.memberId, { requireProcessing: Boolean(options.isLast) });
@@ -528,76 +387,47 @@ async function reserveAddedPlayer(player, options = {}) {
 
 async function waitForAddedPlayerReadyForNext(player) {
   console.log(`Esperando que Golf Tracker confirme a ${player.memberId} antes de agregar el siguiente.`);
-  await waitForSelectedLineSettled(`después de agregar ${player.memberId}`);
-  const addPlayers = await waitForAddPlayersButton(8000);
-  if (!addPlayers) throw new Error(`Golf Tracker confirmó a ${player.memberId}, pero no habilitó el siguiente jugador.`);
+  const deadline = Date.now() + config.settleSeconds * 1000;
+
+  while (Date.now() < deadline) {
+    if (await waitForAddPlayersButton(1200)) return;
+
+    const reservingCount = await reservingTextCount();
+    if (!reservingCount) {
+      await page.waitForTimeout(700);
+      if (await waitForAddPlayersButton(1200)) return;
+    }
+
+    await page.waitForTimeout(1000);
+  }
+
+  throw new Error(`Golf Tracker quedó en "Reservando..." después de agregar la matrícula ${player.memberId}.`);
 }
 
 async function waitForFinalReservationCompletion() {
   console.log("Esperando confirmación final de la línea completa.");
-  await waitForSelectedLineSettled("al finalizar la línea");
-  console.log("La fila elegida dejó de mostrar Reservando; reserva finalizada.");
-}
-
-async function waitForSelectedLineSettled(context) {
   const deadline = Date.now() + config.settleSeconds * 1000;
   let clearSince = 0;
-  let sawReserving = false;
-  const initialClearMs = context.startsWith("antes de agregar") ? 2000 : 8000;
 
   while (Date.now() < deadline) {
-    const reservingCount = await reservingCountForSelectedLine();
-    if (reservingCount > 0) {
-      sawReserving = true;
+    const reservingCount = await reservingTextCount();
+    if (reservingCount) {
       clearSince = 0;
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(1200);
       continue;
     }
 
     if (!clearSince) clearSince = Date.now();
-    const clearMs = sawReserving ? 3000 : initialClearMs;
-    if (Date.now() - clearSince >= clearMs) return;
-    await page.waitForTimeout(500);
+
+    if (Date.now() - clearSince >= 5000) {
+      console.log("Reservando desapareció de forma estable; reserva finalizada.");
+      return;
+    }
+
+    await page.waitForTimeout(1000);
   }
 
-  throw new Error(`La fila ${selectedSlotTime || "elegida"} siguió en "Reservando..." ${context} durante más de ${config.settleSeconds} segundos.`);
-}
-
-async function reservingCountForSelectedLine() {
-  if (!selectedSlotTime) return reservingTextCount();
-  return page.evaluate((time) => {
-    const timeCells = [...document.querySelectorAll(".test_cell_business")]
-      .filter((element) => String(element.textContent || "").includes(time));
-    const rowYs = timeCells
-      .map((element) => element.getBoundingClientRect())
-      .filter((rect) => rect.width > 0 && rect.height > 0)
-      .map((rect) => rect.top + rect.height / 2);
-    if (!rowYs.length) return 0;
-
-    return [...document.querySelectorAll("div, p, span")]
-      .filter((element) => /^reservando\.\.\.$/i.test(String(element.textContent || "").trim()))
-      .filter((element) => {
-        const rect = element.getBoundingClientRect();
-        const centerY = rect.top + rect.height / 2;
-        return rect.width > 0 && rect.height > 0 && rowYs.some((rowY) => Math.abs(rowY - centerY) <= 35);
-      }).length;
-  }, selectedSlotTime).catch(() => 0);
-}
-
-async function occupiedColumnsForSelectedLine() {
-  if (!selectedSlotTime) return 0;
-  const matches = uniqueSlotCandidates(await collectSlotCandidates(
-    page.locator(".test_cell_business"),
-    false,
-    { strictAvailable: true },
-  )).filter((candidate) => candidate.time === selectedSlotTime);
-  const occupiedColumns = new Set();
-
-  for (const candidate of matches) {
-    const topHit = await topHitInfo(candidate.item);
-    if (!topHit.isTopMost) occupiedColumns.add(columnKey(candidate));
-  }
-  return occupiedColumns.size;
+  throw new Error(`La línea quedó en "Reservando..." o sin estabilizar por más de ${config.settleSeconds} segundos; no marco la solicitud como completada.`);
 }
 
 async function waitForReservationTransitionStart(label, options = {}) {
@@ -1014,8 +844,16 @@ async function topDateControlButton() {
 
 async function findSlot() {
   if (config.time) {
-    const exactSlot = await findExactAvailableSlot(config.time);
-    if (exactSlot) return exactSlot;
+    const exactTime = new RegExp(`(^|\\D)${escapeRegExp(config.time)}(\\D|$)`);
+    const candidates = [
+      page.getByRole("button", { name: exactTime }).first(),
+      page.getByRole("link", { name: exactTime }).first(),
+      page.locator("button, a, td, div").filter({ hasText: exactTime }).first(),
+    ];
+
+    for (const candidate of candidates) {
+      if (await isVisible(candidate, 2000)) return candidate;
+    }
   }
 
   if (config.players > 1) {
@@ -1038,23 +876,6 @@ async function findSlot() {
   const fallbackSlot = await earliestVisibleSlotInWindow(page.locator("button, a, td, div, [role='button']"), true);
   if (fallbackSlot) return fallbackSlot;
 
-  return null;
-}
-
-async function findExactAvailableSlot(time) {
-  const matches = uniqueSlotCandidates(await collectSlotCandidates(
-    page.locator(".test_cell_business"),
-    false,
-    { strictAvailable: true },
-  ))
-    .filter((candidate) => candidate.time === time)
-    .sort((a, b) => a.box.x - b.box.x);
-
-  for (const candidate of matches) {
-    await candidate.item.scrollIntoViewIfNeeded().catch(() => {});
-    await page.waitForTimeout(25);
-    if ((await topHitInfo(candidate.item)).isTopMost) return candidate.item;
-  }
   return null;
 }
 
@@ -1327,12 +1148,8 @@ async function capture(name) {
 }
 
 async function firstVisible(locators, timeout = 1500) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    for (const locator of locators) {
-      if (await locator.isVisible().catch(() => false)) return locator;
-    }
-    await page.waitForTimeout(Math.min(100, Math.max(1, deadline - Date.now())));
+  for (const locator of locators) {
+    if (await isVisible(locator, timeout)) return locator;
   }
   return null;
 }
