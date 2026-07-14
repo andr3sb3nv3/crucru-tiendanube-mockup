@@ -75,3 +75,18 @@ test("limits only the initial scheduled search window", () => {
   assert.equal(retryEnv.GOLF_NOT_BEFORE_LOCAL, "2026-07-14T08:10:00");
   assert.equal(retryEnv.GOLF_SEARCH_DEADLINE_LOCAL, "");
 });
+
+test("scheduled development checks can run without confirming a booking", () => {
+  const dryRunEnv = reservationEnv({
+    ...reservation,
+    mode: "development",
+    dryRun: true,
+    memberIds: ["135890"],
+    playerData: [{ memberId: "135890", documentId: "" }],
+    players: 1,
+  });
+
+  assert.equal(dryRunEnv.GOLF_CONFIRM_BOOKING, "false");
+  assert.equal(dryRunEnv.GOLF_NOT_BEFORE_LOCAL, "2026-07-14T08:01:00");
+  assert.equal(dryRunEnv.GOLF_SEARCH_DEADLINE_LOCAL, "");
+});

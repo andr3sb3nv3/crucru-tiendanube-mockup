@@ -48,6 +48,7 @@ if (isUsableStorageState(storageStatePath)) contextOptions.storageState = storag
 const context = await browser.newContext(contextOptions);
 const page = await context.newPage();
 let reservationWriteStarted = false;
+let selectedSlotTime = "";
 
 try {
   await runAgent();
@@ -94,6 +95,7 @@ async function runAgent() {
     if (slot) {
       let panel = null;
       try {
+        selectedSlotTime = firstTimeInText(normalizeSpaces(await slot.innerText().catch(() => ""))) || selectedSlotTime;
         panel = await clickSlot(slot);
         await page.waitForTimeout(700);
         await capture("03-slot-selected");
@@ -265,6 +267,7 @@ async function handleOpenedSlotPanel(panel, options) {
   }
 
   console.log(`Golf Tracker informó que el usuario ya tiene salida a las ${panel.time}; retomo esa línea.`);
+  selectedSlotTime = panel.time;
   await closeInvalidSelectionModal(panel.modal);
   const ownSlot = await findExactAvailableSlot(panel.time);
   if (!ownSlot) {
@@ -369,21 +372,9 @@ async function addLinePlayersIfNeeded(options = {}) {
     const isLast = index === extraPlayers.length - 1;
     const formAlreadyOpen = Boolean(options.formAlreadyOpen && index === 0);
     if (!formAlreadyOpen) {
-      const addPlayers = await waitForAddPlayersButton();
-      if (!addPlayers) {
-        throw new Error(`La reserva base se creó, pero no encontré cómo agregar la matrícula ${player.memberId}.`);
-      }
-
-      await addPlayers.click({ force: true }).catch(() => {});
-      await page.waitForLoadState("networkidle").catch(() => {});
-      await page.waitForTimeout(800);
+      await waitForSelectedLineSettled(`antes de agregar ${player.memberId}`);
     }
-
-    const fields = await visibleMemberFields();
-    if (!fields.length) {
-      console.log(`No encontré campo para cargar la matrícula ${player.memberId}.`);
-      continue;
-    }
+    const fields = await openAddedPlayerForm(player, { formAlreadyOpen });
 
     await fillPlayerData(player, fields);
     await verifyPlayer(player);
@@ -395,6 +386,36 @@ async function addLinePlayersIfNeeded(options = {}) {
   }
 }
 
+async function openAddedPlayerForm(player, options = {}) {
+  if (options.formAlreadyOpen) {
+    const existingFields = await waitForMemberFields(2500);
+    if (existingFields.length) return existingFields;
+  }
+
+  const addPlayers = await waitForAddPlayersButton(8000);
+  if (!addPlayers) {
+    throw new Error(`La línea está estable, pero no encontré cómo agregar la matrícula ${player.memberId}.`);
+  }
+
+  console.log(`Abriendo formulario para ${player.memberId}.`);
+  await addPlayers.click({ force: true });
+  await page.waitForLoadState("networkidle").catch(() => {});
+  const fields = await waitForMemberFields(15000);
+  if (fields.length) return fields;
+
+  throw new Error(`Golf Tracker bloqueó el siguiente espacio, pero no abrió el formulario para ${player.memberId}; detengo la línea para no ocupar otro lugar vacío.`);
+}
+
+async function waitForMemberFields(timeout) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const fields = await visibleMemberFields();
+    if (fields.length) return fields;
+    await page.waitForTimeout(250);
+  }
+  return [];
+}
+
 async function fillPlayerData(player, fields, options = {}) {
   const licenseField = findField(fields, /matr[ií]cula|licen|socio|member/) || fields[0];
   await fillOneMemberValue(player.memberId, licenseField.locator);
@@ -403,8 +424,7 @@ async function fillPlayerData(player, fields, options = {}) {
 
   const documentField = findField(fields, /dni|document|doc\.?|identidad/) || fields.find((field) => field !== licenseField);
   if (!documentField) {
-    console.log(`No encontré campo de DNI/documento para la matrícula ${player.memberId}.`);
-    return;
+    throw new Error(`No encontré campo de DNI/documento para la matrícula ${player.memberId}.`);
   }
 
   await fillOneMemberValue(player.documentId, documentField.locator);
@@ -495,47 +515,60 @@ async function reserveAddedPlayer(player, options = {}) {
 
 async function waitForAddedPlayerReadyForNext(player) {
   console.log(`Esperando que Golf Tracker confirme a ${player.memberId} antes de agregar el siguiente.`);
-  const deadline = Date.now() + config.settleSeconds * 1000;
-
-  while (Date.now() < deadline) {
-    if (await waitForAddPlayersButton(1200)) return;
-
-    const reservingCount = await reservingTextCount();
-    if (!reservingCount) {
-      await page.waitForTimeout(700);
-      if (await waitForAddPlayersButton(1200)) return;
-    }
-
-    await page.waitForTimeout(1000);
-  }
-
-  throw new Error(`Golf Tracker quedó en "Reservando..." después de agregar la matrícula ${player.memberId}.`);
+  await waitForSelectedLineSettled(`después de agregar ${player.memberId}`);
+  const addPlayers = await waitForAddPlayersButton(8000);
+  if (!addPlayers) throw new Error(`Golf Tracker confirmó a ${player.memberId}, pero no habilitó el siguiente jugador.`);
 }
 
 async function waitForFinalReservationCompletion() {
   console.log("Esperando confirmación final de la línea completa.");
+  await waitForSelectedLineSettled("al finalizar la línea");
+  console.log("La fila elegida dejó de mostrar Reservando; reserva finalizada.");
+}
+
+async function waitForSelectedLineSettled(context) {
   const deadline = Date.now() + config.settleSeconds * 1000;
   let clearSince = 0;
+  let sawReserving = false;
+  const initialClearMs = context.startsWith("antes de agregar") ? 2000 : 8000;
 
   while (Date.now() < deadline) {
-    const reservingCount = await reservingTextCount();
-    if (reservingCount) {
+    const reservingCount = await reservingCountForSelectedLine();
+    if (reservingCount > 0) {
+      sawReserving = true;
       clearSince = 0;
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(1000);
       continue;
     }
 
     if (!clearSince) clearSince = Date.now();
-
-    if (Date.now() - clearSince >= 5000) {
-      console.log("Reservando desapareció de forma estable; reserva finalizada.");
-      return;
-    }
-
-    await page.waitForTimeout(1000);
+    const clearMs = sawReserving ? 3000 : initialClearMs;
+    if (Date.now() - clearSince >= clearMs) return;
+    await page.waitForTimeout(500);
   }
 
-  throw new Error(`La línea quedó en "Reservando..." o sin estabilizar por más de ${config.settleSeconds} segundos; no marco la solicitud como completada.`);
+  throw new Error(`La fila ${selectedSlotTime || "elegida"} siguió en "Reservando..." ${context} durante más de ${config.settleSeconds} segundos.`);
+}
+
+async function reservingCountForSelectedLine() {
+  if (!selectedSlotTime) return reservingTextCount();
+  return page.evaluate((time) => {
+    const timeCells = [...document.querySelectorAll(".test_cell_business")]
+      .filter((element) => String(element.textContent || "").includes(time));
+    const rowYs = timeCells
+      .map((element) => element.getBoundingClientRect())
+      .filter((rect) => rect.width > 0 && rect.height > 0)
+      .map((rect) => rect.top + rect.height / 2);
+    if (!rowYs.length) return 0;
+
+    return [...document.querySelectorAll("div, p, span")]
+      .filter((element) => /^reservando\.\.\.$/i.test(String(element.textContent || "").trim()))
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const centerY = rect.top + rect.height / 2;
+        return rect.width > 0 && rect.height > 0 && rowYs.some((rowY) => Math.abs(rowY - centerY) <= 35);
+      }).length;
+  }, selectedSlotTime).catch(() => 0);
 }
 
 async function waitForReservationTransitionStart(label, options = {}) {

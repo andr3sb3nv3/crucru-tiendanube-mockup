@@ -114,6 +114,23 @@
       font-weight: 700;
     }
 
+    .test-option {
+      display: none;
+      grid-template-columns: 20px 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #c7d4cc;
+      border-radius: 6px;
+      background: #f7faf8;
+    }
+
+    .test-option input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+    }
+
     button {
       width: fit-content;
       border: 0;
@@ -244,6 +261,11 @@
       </div>
       <div class="hint" id="execution-hint"></div>
 
+      <label class="test-option" id="async-test-field">
+        <input name="dryRun" type="checkbox" value="true" checked>
+        Prueba asíncrona sin confirmar la reserva
+      </label>
+
       <label>
         Matrículas y DNI (hasta 4)
         <textarea name="memberIds" placeholder="Una línea por jugador: matrícula DNI" required>135890
@@ -302,6 +324,7 @@
     const runDateField = document.querySelector("#run-date-field");
     const runTimeField = document.querySelector("#run-time-field");
     const executionHint = document.querySelector("#execution-hint");
+    const asyncTestField = document.querySelector("#async-test-field");
     const targetDefaults = {
       "golf-tracker": {
         bookingText: "practica deportiva feriado",
@@ -355,7 +378,9 @@
           message.textContent = payload.error || `No se pudo guardar. HTTP ${response.status}`;
           return;
         }
-        message.textContent = `${successPrefix}. Se intentará reservar el ${formatRunAt(payload)}.`;
+        message.textContent = payload.dryRun
+          ? `${successPrefix}. La prueba asíncrona se ejecutará el ${formatRunAt(payload)} sin confirmar la reserva.`
+          : `${successPrefix}. Se intentará reservar el ${formatRunAt(payload)}.`;
         form.reset();
         setTarget("golf-tracker");
         setMode("production");
@@ -387,7 +412,7 @@
         }
         tbody.innerHTML = reservations.map((reservation) => `
           <tr>
-            <td>${escapeHtml(reservation.playDate)}${reservation.mode ? `<br>${escapeHtml(reservation.mode)}` : ""}${reservation.target ? `<br>${escapeHtml(formatTarget(reservation.target))}` : ""}</td>
+            <td>${escapeHtml(reservation.playDate)}${reservation.mode ? `<br>${escapeHtml(reservation.mode)}` : ""}${reservation.dryRun ? "<br>prueba asíncrona" : ""}${reservation.target ? `<br>${escapeHtml(formatTarget(reservation.target))}` : ""}</td>
             <td>${escapeHtml(formatRunAt(reservation))}</td>
             <td>${escapeHtml(formatPlayers(reservation))}</td>
             <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
@@ -455,7 +480,7 @@
         running: "ejecutando",
         done: "completada",
         failed: "fallida",
-        dry_run: "prueba"
+        dry_run: "prueba correcta"
       }[status] || status;
     }
 
@@ -479,7 +504,7 @@
 
     function setDefaultRunAt() {
       const now = new Date();
-      now.setMinutes(now.getMinutes() + 60);
+      now.setMinutes(now.getMinutes() + 3);
       form.runDate.value = toDateValue(now);
       form.runTime.value = toTimeValue(now);
     }
@@ -491,6 +516,7 @@
       developmentButton.classList.toggle("active", !isProduction);
       runDateField.style.display = isProduction ? "none" : "grid";
       runTimeField.style.display = isProduction ? "none" : "grid";
+      asyncTestField.style.display = isProduction ? "none" : "grid";
       form.runDate.required = !isProduction;
       form.runTime.required = !isProduction;
       if (!isProduction && !form.runDate.value) setDefaultRunAt();
@@ -515,7 +541,9 @@
 
     function syncExecutionFields() {
       if (form.mode.value !== "production") {
-        executionHint.textContent = `Desarrollo: ${formatTarget(form.target.value)} se ejecuta en la fecha y hora manual indicadas.`;
+        executionHint.textContent = form.dryRun.checked
+          ? "Desarrollo: el worker ejecutará la prueba a la hora indicada y se detendrá antes de confirmar."
+          : `Desarrollo: ${formatTarget(form.target.value)} hará una reserva real en la fecha y hora indicadas.`;
         return;
       }
 
@@ -561,6 +589,7 @@
 
     setTarget("golf-tracker");
     setMode("production");
+    form.dryRun.addEventListener("change", syncExecutionFields);
     loadReservations();
     setInterval(loadReservations, 1000);
   </script>

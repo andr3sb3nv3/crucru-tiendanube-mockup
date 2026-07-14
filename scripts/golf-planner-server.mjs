@@ -191,6 +191,7 @@ function normalizeReservation(payload) {
     lastError: null,
     scheduledRetryCount: 0,
     reservationWriteStarted: false,
+    dryRun: mode === "development" && truthyValue(payload.dryRun),
   };
 }
 
@@ -412,6 +413,10 @@ function booleanEnv(name, fallback) {
   const value = process.env[name];
   if (value === undefined) return fallback;
   return ["1", "true", "yes", "si", "sí"].includes(value.toLowerCase());
+}
+
+function truthyValue(value) {
+  return ["1", "true", "yes", "si", "sí", "on"].includes(String(value || "").trim().toLowerCase());
 }
 
 function positiveNumber(value, fallback) {
