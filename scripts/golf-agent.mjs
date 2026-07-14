@@ -382,7 +382,7 @@ async function reserveAddedPlayer(player, options = {}) {
   console.log(`Reservando jugador ${player.memberId}.`);
   await reserve.click({ force: true });
   await page.waitForLoadState("networkidle").catch(() => {});
-  await waitForReservationTransitionStart(player.memberId, { requireProcessing: Boolean(options.isLast) });
+  await waitForReservationTransitionStart(player.memberId, { isLast: Boolean(options.isLast) });
 }
 
 async function waitForAddedPlayerReadyForNext(player) {
@@ -436,10 +436,15 @@ async function waitForReservationTransitionStart(label, options = {}) {
   while (Date.now() < deadline) {
     const reservingCount = await reservingTextCount();
     if (!reservingCount) {
-      const addPlayers = options.requireProcessing ? null : await waitForAddPlayersButton(500);
+      const addPlayers = options.isLast ? null : await waitForAddPlayersButton(500);
       if (addPlayers) {
         console.log(`Golf Tracker ya permite agregar otro jugador después de ${label}.`);
         return "next";
+      }
+
+      if (options.isLast && await finalPlayerFormClosed()) {
+        console.log(`Golf Tracker cerró el formulario después de reservar a ${label}.`);
+        return "submitted";
       }
       await page.waitForTimeout(700);
       continue;
@@ -449,12 +454,20 @@ async function waitForReservationTransitionStart(label, options = {}) {
     return "reserving";
   }
 
-  if (options.requireProcessing) {
-    throw new Error(`No vi a Golf Tracker empezar a procesar la reserva de ${label} en ${config.transitionSeconds} segundos.`);
+  if (options.isLast) {
+    throw new Error(`Después de reservar a ${label}, Golf Tracker no mostró "Reservando..." ni cerró el formulario en ${config.transitionSeconds} segundos.`);
   }
 
   console.log(`No vi aparecer Reservando para ${label} en ${config.transitionSeconds} segundos; sigo esperando el siguiente estado.`);
   return "timeout";
+}
+
+async function finalPlayerFormClosed() {
+  const reserve = await waitForReservationButton(250);
+  if (reserve) return false;
+
+  const fields = await visibleMemberFields();
+  return fields.length === 0;
 }
 
 async function reservingTextCount() {
