@@ -88,6 +88,7 @@ async function runAgent() {
       await waitForScheduleReady();
       await closeFloatingChatIfVisible();
       slot = await findSlot();
+      if (booleanEnv("GOLF_CAPTURE_GRID", false)) await capture("debug-grid-before-slot");
     } catch (error) {
       if (attempt >= config.maxAttempts || searchDeadlineReached()) throw error;
       console.log(`La grilla todavía no está lista: ${error instanceof Error ? error.message : error}`);
@@ -107,7 +108,7 @@ async function runAgent() {
           return;
         }
 
-        if (["add-players", "add-player-form"].includes(panel.type)) {
+        if (["add-players", "add-player-form", "line-complete"].includes(panel.type)) {
           console.log(`Retomo la reserva base existente${panel.time ? ` de las ${panel.time}` : ""}.`);
         } else {
           await reservePrimaryPlayer();
@@ -121,7 +122,9 @@ async function runAgent() {
         continue;
       }
 
-      await addLinePlayersIfNeeded({ formAlreadyOpen: panel.type === "add-player-form" });
+      if (panel.type !== "line-complete") {
+        await addLinePlayersIfNeeded({ formAlreadyOpen: panel.type === "add-player-form" });
+      }
       await waitForFinalReservationCompletion();
       await capture("04-reservation-confirmed");
       console.log("Solicitud de reserva enviada.");
@@ -269,8 +272,18 @@ async function handleOpenedSlotPanel(panel, options) {
   console.log(`Golf Tracker informó que el usuario ya tiene salida a las ${panel.time}; retomo esa línea.`);
   selectedSlotTime = panel.time;
   await closeInvalidSelectionModal(panel.modal);
-  const ownSlot = await findExactAvailableSlot(panel.time);
+  let ownSlot = await findExactAvailableSlot(panel.time);
+  if (!ownSlot && await reservingCountForSelectedLine() > 0) {
+    console.log(`La línea propia ${panel.time} todavía está procesando jugadores; espero que se estabilice.`);
+    await waitForSelectedLineSettled("antes de retomar la línea existente");
+    ownSlot = await findExactAvailableSlot(panel.time);
+  }
   if (!ownSlot) {
+    const occupied = await occupiedColumnsForSelectedLine();
+    if (occupied >= config.players) {
+      console.log(`La línea propia ${panel.time} ya tiene ${occupied} espacios ocupados; no agrego jugadores duplicados.`);
+      return { type: "line-complete", time: panel.time };
+    }
     throw new Error(`Golf Tracker indicó que la línea propia es ${panel.time}, pero no encontré un espacio visible en esa fila.`);
   }
   const result = await clickSlot(ownSlot, { redirectedToOwnLine: true });
@@ -569,6 +582,22 @@ async function reservingCountForSelectedLine() {
         return rect.width > 0 && rect.height > 0 && rowYs.some((rowY) => Math.abs(rowY - centerY) <= 35);
       }).length;
   }, selectedSlotTime).catch(() => 0);
+}
+
+async function occupiedColumnsForSelectedLine() {
+  if (!selectedSlotTime) return 0;
+  const matches = uniqueSlotCandidates(await collectSlotCandidates(
+    page.locator(".test_cell_business"),
+    false,
+    { strictAvailable: true },
+  )).filter((candidate) => candidate.time === selectedSlotTime);
+  const occupiedColumns = new Set();
+
+  for (const candidate of matches) {
+    const topHit = await topHitInfo(candidate.item);
+    if (!topHit.isTopMost) occupiedColumns.add(columnKey(candidate));
+  }
+  return occupiedColumns.size;
 }
 
 async function waitForReservationTransitionStart(label, options = {}) {
@@ -1026,7 +1055,7 @@ async function findExactAvailableSlot(time) {
     await page.waitForTimeout(25);
     if ((await topHitInfo(candidate.item)).isTopMost) return candidate.item;
   }
-  return matches[0]?.item || null;
+  return null;
 }
 
 async function bestSlotForPlayerCount(respectWindow) {

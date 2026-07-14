@@ -420,7 +420,9 @@
             <td class="error">${escapeHtml(formatLastStatus(reservation))}</td>
             <td>
               <div class="actions">
-                <button class="secondary" type="button" data-run="${escapeHtml(reservation.id)}">Intentar ahora</button>
+                ${reservation.reservationWriteStarted
+                  ? '<span class="status">Enviado al sitio</span>'
+                  : `<button class="secondary" type="button" data-run="${escapeHtml(reservation.id)}">Intentar ahora</button>`}
                 <button class="secondary" type="button" data-delete="${escapeHtml(reservation.id)}">Borrar</button>
               </div>
             </td>

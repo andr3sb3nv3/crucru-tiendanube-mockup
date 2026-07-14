@@ -95,6 +95,7 @@ const server = http.createServer(async (request, response) => {
     if (request.method === "POST" && request.url === "/api/reservations") {
       const payload = await readJson(request);
       const reservation = normalizeReservation(payload);
+      await assertNoPreviousWrite(reservation);
       await insertReservation(reservation);
       wakeWorker();
       return json(response, reservation, 201);
@@ -103,6 +104,7 @@ const server = http.createServer(async (request, response) => {
     if (request.method === "POST" && request.url === "/api/reservations/run-now") {
       const payload = await readJson(request);
       const reservation = makeImmediate(normalizeReservation(payload), "Solicitud manual recibida. En cola para iniciar...\n");
+      await assertNoPreviousWrite(reservation);
       await insertReservation(reservation);
       wakeWorker();
       return json(response, reservation, 202);
@@ -113,6 +115,9 @@ const server = http.createServer(async (request, response) => {
       const reservation = await getReservation(id);
       if (!reservation) throw new Error("No encontré esa solicitud.");
       if (["starting", "running"].includes(reservation.status)) throw new Error("Esa solicitud ya está ejecutándose.");
+      if (reservation.reservationWriteStarted) {
+        throw new Error("Esta solicitud ya envió datos a Golf Tracker. Revisá o cancelá esa línea antes de volver a intentarla.");
+      }
 
       const immediate = makeImmediate(reservation, "Reintento manual recibido. En cola para iniciar...\n");
       const updated = await updateReservation(id, () => immediate);
@@ -193,6 +198,18 @@ function normalizeReservation(payload) {
     reservationWriteStarted: false,
     dryRun: mode === "development" && truthyValue(payload.dryRun),
   };
+}
+
+async function assertNoPreviousWrite(reservation) {
+  if (reservation.dryRun) return;
+  const previous = (await listReservations()).find((item) => (
+    item.id !== reservation.id
+    && item.target === reservation.target
+    && item.playDate === reservation.playDate
+    && item.reservationWriteStarted
+  ));
+  if (!previous) return;
+  throw new Error(`Ya existe una solicitud que envió datos para ${reservation.playDate}. Revisá o cancelá esa reserva antes de crear otra.`);
 }
 
 function normalizeMode(value) {
