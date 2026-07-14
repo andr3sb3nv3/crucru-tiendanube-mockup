@@ -252,7 +252,7 @@
       <div class="grid">
         <label id="run-time-field">
           Hora de ejecución
-          <input name="runTime" type="time" required>
+          <input name="runTime" type="time" step="1" required>
         </label>
         <label>
           Opción/lugar de reserva
@@ -488,7 +488,7 @@
 
     function formatRunAt(reservation) {
       if (reservation.runDate && reservation.runTime) return `${reservation.runDate} ${reservation.runTime}`;
-      if (reservation.runAtLocal) return reservation.runAtLocal.replace("T", " ").slice(0, 16);
+      if (reservation.runAtLocal) return reservation.runAtLocal.replace("T", " ");
       if (reservation.bookingOpenDate) return `${reservation.bookingOpenDate} 08:00`;
       return "";
     }
@@ -506,12 +506,13 @@
 
     function setDefaultRunAt() {
       const now = new Date();
-      now.setMinutes(now.getMinutes() + 3);
+      now.setSeconds(now.getSeconds() + 20);
       form.runDate.value = toDateValue(now);
       form.runTime.value = toTimeValue(now);
     }
 
     function setMode(mode) {
+      const wasProduction = form.mode.value === "production";
       form.mode.value = mode;
       const isProduction = mode === "production";
       productionButton.classList.toggle("active", isProduction);
@@ -521,7 +522,7 @@
       asyncTestField.style.display = isProduction ? "none" : "grid";
       form.runDate.required = !isProduction;
       form.runTime.required = !isProduction;
-      if (!isProduction && !form.runDate.value) setDefaultRunAt();
+      if (!isProduction && (wasProduction || !form.runDate.value)) setDefaultRunAt();
       syncExecutionFields();
     }
 
@@ -577,7 +578,7 @@
     }
 
     function toTimeValue(date) {
-      return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+      return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")}`;
     }
 
     function escapeHtml(value) {

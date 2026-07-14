@@ -16,6 +16,7 @@ import {
 } from "./golf-store.mjs";
 import { executeReservation } from "./golf-reservation-runner.mjs";
 import { applyScheduledRetry, scheduledRetryPlan } from "./golf-reservation-retry.mjs";
+import { isExecutionTime, localDateTime, reservationIsDue } from "./golf-schedule.mjs";
 
 process.env.TZ = "America/Argentina/Buenos_Aires";
 loadEnvFile(".env.golf");
@@ -183,7 +184,7 @@ function normalizeReservation(payload) {
     playDate,
     runDate,
     runTime,
-    runAtLocal: `${runDate}T${runTime}:00`,
+    runAtLocal: localDateTime(runDate, runTime),
     bookingOpenDate: runDate,
     memberIds,
     playerData,
@@ -233,7 +234,7 @@ function executionTimeForMode(mode, payload, playDate, target) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(runDate)) throw new Error("Elegí una fecha de ejecución válida.");
 
   const runTime = String(payload.runTime || "").trim();
-  if (!isTime(runTime)) throw new Error("Elegí una hora de ejecución válida.");
+  if (!isExecutionTime(runTime)) throw new Error("Elegí una hora de ejecución válida.");
 
   return { runDate, runTime };
 }
@@ -261,7 +262,9 @@ async function workerTick() {
 
     const capacity = Math.max(0, workerConcurrency - activeJobs.size);
     if (capacity > 0) {
-      const due = await claimDueReservations(now, reservationIsDue, {
+      const due = await claimDueReservations(now, (reservation, currentTime) => (
+        reservationIsDue(reservation, currentTime, workerPrewarmMs)
+      ), {
         limit: capacity,
         workerId,
       });
@@ -314,7 +317,7 @@ async function workerTick() {
 function makeImmediate(reservation, initialLog) {
   const now = new Date();
   const runDate = formatIsoDate(now);
-  const runTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const runTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
   return {
     ...reservation,
     status: "pending",
@@ -322,7 +325,7 @@ function makeImmediate(reservation, initialLog) {
     scheduledRunAtLocal: reservation.runAtLocal,
     runDate,
     runTime,
-    runAtLocal: `${runDate}T${runTime}:${String(now.getSeconds()).padStart(2, "0")}`,
+    runAtLocal: localDateTime(runDate, runTime),
     lastRunAt: null,
     claimedAt: null,
     startedAt: null,
@@ -346,20 +349,6 @@ function productionRunTime(target) {
 function configuredTime(name, fallback) {
   const value = process.env[name] || fallback;
   return isTime(value) ? value : fallback;
-}
-
-function reservationIsDue(reservation, now) {
-  const runAt = reservationRunAt(reservation);
-  if (!runAt) return false;
-  const leadMs = reservation.runMode === "manual" ? 0 : workerPrewarmMs;
-  return runAt.getTime() - leadMs <= now.getTime();
-}
-
-function reservationRunAt(reservation) {
-  if (reservation.runAtLocal) return dateTimeFromLocal(reservation.runAtLocal);
-  if (reservation.runDate && reservation.runTime) return dateTimeFromLocal(`${reservation.runDate}T${reservation.runTime}:00`);
-  if (reservation.bookingOpenDate) return dateTimeFromLocal(`${reservation.bookingOpenDate}T08:00:00`);
-  return null;
 }
 
 function parsePlayerRows(value) {
@@ -458,11 +447,4 @@ function formatIsoDate(date) {
 function dateFromIso(value) {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, month - 1, day);
-}
-
-function dateTimeFromLocal(value) {
-  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
-  if (!match) return null;
-  const [, year, month, day, hours, minutes, seconds = "0"] = match;
-  return new Date(Number(year), Number(month) - 1, Number(day), Number(hours), Number(minutes), Number(seconds));
 }
