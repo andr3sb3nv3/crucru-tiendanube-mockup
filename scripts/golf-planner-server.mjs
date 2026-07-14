@@ -15,6 +15,7 @@ import {
   updateReservation,
 } from "./golf-store.mjs";
 import { executeReservation } from "./golf-reservation-runner.mjs";
+import { applyScheduledRetry, scheduledRetryPlan } from "./golf-reservation-retry.mjs";
 
 process.env.TZ = "America/Argentina/Buenos_Aires";
 loadEnvFile(".env.golf");
@@ -77,6 +78,11 @@ const server = http.createServer(async (request, response) => {
           active: activeJobs.size,
           concurrency: workerConcurrency,
           pollMs: workerPollMs,
+        },
+        schedule: {
+          golfTrackerFirstAttempt: productionRunTime("golf-tracker"),
+          initialAttemptDeadline: configuredTime("GOLF_INITIAL_ATTEMPT_DEADLINE_TIME", "08:08"),
+          safeRetry: configuredTime("GOLF_SCHEDULED_RETRY_TIME", "08:10"),
         },
         now: new Date().toISOString(),
       });
@@ -183,6 +189,8 @@ function normalizeReservation(payload) {
     createdAt: new Date().toISOString(),
     lastRunAt: null,
     lastError: null,
+    scheduledRetryCount: 0,
+    reservationWriteStarted: false,
   };
 }
 
@@ -199,7 +207,7 @@ function executionTimeForMode(mode, payload, playDate, target) {
   if (mode === "production") {
     return {
       runDate: formatIsoDate(addDays(dateFromIso(playDate), -targets[target].productionAdvanceDays)),
-      runTime: "08:00",
+      runTime: productionRunTime(target),
     };
   }
 
@@ -242,6 +250,22 @@ async function workerTick() {
 
       for (const reservation of due) {
         const execution = executeReservation(reservation)
+          .then(async (result) => {
+            const retryPlan = scheduledRetryPlan(reservation, result, {
+              retryTime: configuredTime("GOLF_SCHEDULED_RETRY_TIME", "08:10"),
+              maxRetries: positiveNumber(process.env.GOLF_SCHEDULED_RETRIES, 1),
+            });
+            if (!retryPlan) return result;
+
+            const updated = await updateReservation(reservation.id, (current) => {
+              if (current.status !== "failed") return null;
+              return applyScheduledRetry(current, retryPlan);
+            });
+            if (updated?.status === "pending") {
+              console.log(`Reserva ${reservation.id}: reintento programado para ${retryPlan.retryDate} ${retryPlan.retryTime}.`);
+            }
+            return result;
+          })
           .catch(async (error) => {
             const detail = error instanceof Error ? error.stack || error.message : String(error);
             console.error(`Reserva ${reservation.id}: ${detail}`);
@@ -288,9 +312,22 @@ function makeImmediate(reservation, initialLog) {
     heartbeatAt: null,
     workerId: null,
     lastError: null,
+    reservationWriteStarted: false,
     lastStdout: initialLog,
     lastStderr: "",
   };
+}
+
+function productionRunTime(target) {
+  if (target === "golf-tracker") {
+    return configuredTime("GOLF_PRODUCTION_RUN_TIME", "08:01");
+  }
+  return configuredTime("JOCKEY_PRODUCTION_RUN_TIME", "08:00");
+}
+
+function configuredTime(name, fallback) {
+  const value = process.env[name] || fallback;
+  return isTime(value) ? value : fallback;
 }
 
 function reservationIsDue(reservation, now) {

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { chromium } from "playwright";
+import { RESERVATION_WRITE_STARTED_MARKER } from "./golf-reservation-retry.mjs";
 
 process.env.TZ = "America/Argentina/Buenos_Aires";
 loadEnvFile(".env.golf");
@@ -30,6 +31,7 @@ const config = {
   baseReservationSeconds: Number(env("GOLF_BASE_RESERVATION_SECONDS", "240")),
   transitionSeconds: Number(env("GOLF_RESERVATION_TRANSITION_SECONDS", "90")),
   notBeforeLocal: env("GOLF_NOT_BEFORE_LOCAL", ""),
+  searchDeadlineLocal: env("GOLF_SEARCH_DEADLINE_LOCAL", ""),
 };
 
 fs.mkdirSync(config.outputDir, { recursive: true });
@@ -45,6 +47,7 @@ const contextOptions = {
 if (isUsableStorageState(storageStatePath)) contextOptions.storageState = storageStatePath;
 const context = await browser.newContext(contextOptions);
 const page = await context.newPage();
+let reservationWriteStarted = false;
 
 try {
   await runAgent();
@@ -72,6 +75,9 @@ async function runAgent() {
   await waitUntilNotBefore();
 
   for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
+    if (!reservationWriteStarted && searchDeadlineReached()) {
+      throw new Error(`Terminó la ventana del primer intento (${config.searchDeadlineLocal.replace("T", " ")}); preparo el reintento programado.`);
+    }
     console.log(
       `Buscando turno ${config.date} entre ${config.timeWindowStart} y ${config.timeWindowEnd} (${attempt}/${config.maxAttempts})`,
     );
@@ -82,22 +88,31 @@ async function runAgent() {
       await closeFloatingChatIfVisible();
       slot = await findSlot();
     } catch (error) {
-      if (attempt >= config.maxAttempts) throw error;
+      if (attempt >= config.maxAttempts || searchDeadlineReached()) throw error;
       console.log(`La grilla todavía no está lista: ${error instanceof Error ? error.message : error}`);
     }
     if (slot) {
-      await clickSlot(slot);
-      await page.waitForTimeout(700);
-      await capture("03-slot-selected");
+      try {
+        await clickSlot(slot);
+        await page.waitForTimeout(700);
+        await capture("03-slot-selected");
 
-      if (!config.confirmBooking) {
-        console.log("Turno encontrado. Dry run activo: no se confirmó la reserva.");
-        console.log("Para confirmar, usar GOLF_CONFIRM_BOOKING=true.");
-        process.exitCode = 2;
-        return;
+        if (!config.confirmBooking) {
+          console.log("Turno encontrado. Dry run activo: no se confirmó la reserva.");
+          console.log("Para confirmar, usar GOLF_CONFIRM_BOOKING=true.");
+          process.exitCode = 2;
+          return;
+        }
+
+        await reservePrimaryPlayer();
+      } catch (error) {
+        if (reservationWriteStarted || attempt >= config.maxAttempts || searchDeadlineReached()) throw error;
+        console.log(`El turno todavía no permitió iniciar la reserva: ${error instanceof Error ? error.message : error}`);
+        await capture(`03-slot-not-ready-attempt-${attempt}`);
+        await prepareNextSearch(attempt);
+        continue;
       }
 
-      await reservePrimaryPlayer();
       await waitForBaseReservation();
       await addLinePlayersIfNeeded();
       await waitForFinalReservationCompletion();
@@ -107,16 +122,27 @@ async function runAgent() {
     }
 
     await capture(`02-no-slot-attempt-${attempt}`);
-    if (attempt < config.maxAttempts) {
-      await page.waitForTimeout(config.pollSeconds * 1000);
-      await page.reload({ waitUntil: "domcontentloaded" });
-      await page.waitForLoadState("networkidle").catch(() => {});
+    if (attempt < config.maxAttempts && !searchDeadlineReached()) {
+      await prepareNextSearch(attempt);
     }
   }
 
   throw new Error(
     `No encontré un turno visible para ${config.date} entre ${config.timeWindowStart} y ${config.timeWindowEnd}.`,
   );
+}
+
+function searchDeadlineReached() {
+  if (!config.searchDeadlineLocal) return false;
+  const deadline = new Date(config.searchDeadlineLocal);
+  return Number.isFinite(deadline.getTime()) && Date.now() >= deadline.getTime();
+}
+
+async function prepareNextSearch(attempt) {
+  console.log(`Recargo la grilla para el intento ${attempt + 1}/${config.maxAttempts}.`);
+  await page.waitForTimeout(config.pollSeconds * 1000);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle").catch(() => {});
 }
 
 async function waitUntilNotBefore() {
@@ -257,10 +283,7 @@ async function dispatchSlotClick(slot) {
 
 async function reservationPanelIsOpen() {
   if (await waitForAddPlayersButton(250)) return true;
-  if (await firstVisible([
-    page.getByText(/reserva creada|creada con éxito|reservando/i).first(),
-  ], 250)) return true;
-  return Boolean(await reservationActionButton());
+  return Boolean(await waitForReservationButton(1200));
 }
 
 async function reservePrimaryPlayer() {
@@ -270,6 +293,8 @@ async function reservePrimaryPlayer() {
     throw new Error("Se abrió el turno, pero no encontré el botón Reservar para el primer jugador.");
   }
 
+  reservationWriteStarted = true;
+  console.log(RESERVATION_WRITE_STARTED_MARKER);
   await reserve.click({ force: true });
   await page.waitForLoadState("networkidle").catch(() => {});
   await page.waitForTimeout(1200);
@@ -1166,8 +1191,12 @@ async function capture(name) {
 }
 
 async function firstVisible(locators, timeout = 1500) {
-  for (const locator of locators) {
-    if (await isVisible(locator, timeout)) return locator;
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    for (const locator of locators) {
+      if (await locator.isVisible().catch(() => false)) return locator;
+    }
+    await page.waitForTimeout(Math.min(100, Math.max(1, deadline - Date.now())));
   }
   return null;
 }

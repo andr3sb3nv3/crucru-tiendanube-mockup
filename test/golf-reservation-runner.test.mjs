@@ -22,6 +22,7 @@ test.after(async () => {
 test("keeps running until the agent exits, then marks done", async () => {
   process.env.FAKE_AGENT_EXIT_CODE = "0";
   process.env.FAKE_AGENT_DELAY_MS = "300";
+  process.env.FAKE_AGENT_WRITE_STARTED = "false";
   const reservation = await insertAndClaim("success");
 
   const execution = executeReservation(reservation);
@@ -42,6 +43,7 @@ test("keeps running until the agent exits, then marks done", async () => {
 test("marks failed only after a non-zero agent exit", async () => {
   process.env.FAKE_AGENT_EXIT_CODE = "1";
   process.env.FAKE_AGENT_DELAY_MS = "100";
+  process.env.FAKE_AGENT_WRITE_STARTED = "false";
   const reservation = await insertAndClaim("failure");
 
   const result = await executeReservation(reservation);
@@ -49,6 +51,19 @@ test("marks failed only after a non-zero agent exit", async () => {
   assert.equal(result.status, "failed");
   assert.equal(completed.status, "failed");
   assert.match(completed.lastError, /Agente de prueba terminado/);
+});
+
+test("persists when the agent started writing a reservation", async () => {
+  process.env.FAKE_AGENT_EXIT_CODE = "1";
+  process.env.FAKE_AGENT_DELAY_MS = "100";
+  process.env.FAKE_AGENT_WRITE_STARTED = "true";
+  const reservation = await insertAndClaim("write-started");
+
+  const result = await executeReservation(reservation);
+  const completed = await store.getReservation(reservation.id);
+  assert.equal(result.status, "failed");
+  assert.equal(result.reservationWriteStarted, true);
+  assert.equal(completed.reservationWriteStarted, true);
 });
 
 async function insertAndClaim(id) {

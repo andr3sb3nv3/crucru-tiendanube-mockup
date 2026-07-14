@@ -1,6 +1,7 @@
 import process from "node:process";
 import { spawn } from "node:child_process";
 import { updateReservation } from "./golf-store.mjs";
+import { RESERVATION_WRITE_STARTED_MARKER } from "./golf-reservation-retry.mjs";
 
 const targets = {
   "golf-tracker": {
@@ -38,6 +39,7 @@ export async function executeReservation(reservation) {
   let killTimer;
   let finished = false;
   let timedOut = false;
+  let reservationWriteStarted = Boolean(reservation.reservationWriteStarted);
   let writeChain = Promise.resolve();
 
   const persist = (patch) => {
@@ -100,10 +102,17 @@ export async function executeReservation(reservation) {
         lastStdout: trimLog(stdout),
         lastStderr: trimLog(stderr),
         lastError,
+        reservationWriteStarted,
         workerId: null,
       });
       await writeChain;
-      resolve({ status: finalStatus, code, stdout: trimLog(stdout), stderr: trimLog(stderr) });
+      resolve({
+        status: finalStatus,
+        code,
+        stdout: trimLog(stdout),
+        stderr: trimLog(stderr),
+        reservationWriteStarted,
+      });
     };
 
     try {
@@ -130,6 +139,10 @@ export async function executeReservation(reservation) {
     });
     child.stdout.on("data", (chunk) => {
       stdout += chunk.toString();
+      if (!reservationWriteStarted && stdout.includes(RESERVATION_WRITE_STARTED_MARKER)) {
+        reservationWriteStarted = true;
+        persist({ reservationWriteStarted: true });
+      }
       scheduleProgress();
     });
     child.stderr.on("data", (chunk) => {
@@ -173,6 +186,7 @@ export function reservationEnv(reservation) {
       ? process.env.GOLF_SCHEDULED_POLL_SECONDS || "1"
       : process.env.GOLF_MANUAL_POLL_SECONDS || process.env.GOLF_POLL_SECONDS || "1",
     GOLF_NOT_BEFORE_LOCAL: scheduled ? reservation.runAtLocal || "" : "",
+    GOLF_SEARCH_DEADLINE_LOCAL: initialSearchDeadline(reservation, scheduled),
     GOLF_RESERVATION_SETTLE_SECONDS: process.env.GOLF_RESERVATION_SETTLE_SECONDS || "240",
     GOLF_BASE_RESERVATION_SECONDS: process.env.GOLF_BASE_RESERVATION_SECONDS || "240",
     GOLF_RESERVATION_TRANSITION_SECONDS: process.env.GOLF_RESERVATION_TRANSITION_SECONDS || "90",
@@ -236,6 +250,15 @@ function normalizeTarget(value) {
 
 function usesJockeyLikeAgent(target) {
   return ["jockey-palermo", "club-newman"].includes(normalizeTarget(target));
+}
+
+function initialSearchDeadline(reservation, scheduled) {
+  if (!scheduled || reservation.mode !== "production") return "";
+  if (Number(reservation.scheduledRetryCount || 0) > 0) return "";
+  const date = String(reservation.bookingOpenDate || reservation.runDate || "");
+  const time = String(process.env.GOLF_INITIAL_ATTEMPT_DEADLINE_TIME || "08:08");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return "";
+  return `${date}T${time}:00`;
 }
 
 function trimLog(value) {

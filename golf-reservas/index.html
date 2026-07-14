@@ -527,13 +527,14 @@
       const runAt = productionRunAt(form.playDate.value, form.target.value);
       form.runDate.value = runAt.date;
       form.runTime.value = runAt.time;
-      executionHint.textContent = `Producción: se ejecutará automáticamente el ${runAt.date} a las ${runAt.time}.`;
+      const retryHint = form.target.value === "golf-tracker" ? " Si el intento termina antes de enviar la reserva, volverá a intentar a las 08:10." : "";
+      executionHint.textContent = `Producción: se ejecutará automáticamente el ${runAt.date} a las ${runAt.time}.${retryHint}`;
     }
 
     function productionRunAt(playDate, target) {
       const date = dateFromValue(playDate);
       date.setDate(date.getDate() - (target === "jockey-palermo" || target === "club-newman" ? 2 : 3));
-      return { date: toDateValue(date), time: "08:00" };
+      return { date: toDateValue(date), time: target === "golf-tracker" ? "08:01" : "08:00" };
     }
 
     function dateFromValue(value) {
