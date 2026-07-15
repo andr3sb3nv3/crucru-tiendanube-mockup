@@ -9,7 +9,9 @@ export function localDateTime(date, time) {
 export function reservationIsDue(reservation, now, prewarmMs = 0) {
   const runAt = reservationRunAt(reservation);
   if (!runAt) return false;
-  const leadMs = reservation.runMode === "manual" || reservation.mode === "development" ? 0 : prewarmMs;
+  const leadMs = reservation.runMode === "manual" || reservation.scheduleKind === "exact" || reservation.mode === "development"
+    ? 0
+    : prewarmMs;
   return runAt.getTime() - leadMs <= now.getTime();
 }
 

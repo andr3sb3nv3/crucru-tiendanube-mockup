@@ -31,3 +31,15 @@ test("production can prewarm before the booking opens", () => {
   assert.equal(reservationIsDue(reservation, new Date(2026, 6, 17, 7, 58, 29), 90_000), false);
   assert.equal(reservationIsDue(reservation, new Date(2026, 6, 17, 7, 58, 30), 90_000), true);
 });
+
+test("an exact production request waits for its selected second", () => {
+  const reservation = {
+    mode: "production",
+    scheduleKind: "exact",
+    runMode: "scheduled",
+    runAtLocal: "2026-07-15T12:00:20",
+  };
+
+  assert.equal(reservationIsDue(reservation, new Date(2026, 6, 15, 12, 0, 19), 90_000), false);
+  assert.equal(reservationIsDue(reservation, new Date(2026, 6, 15, 12, 0, 20), 90_000), true);
+});

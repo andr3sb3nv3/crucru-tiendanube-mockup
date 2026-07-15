@@ -160,7 +160,8 @@ function normalizeReservation(payload) {
 
   const mode = normalizeMode(payload.mode);
   const target = normalizeTarget(payload.target);
-  const { runDate, runTime } = executionTimeForMode(mode, payload, playDate, target);
+  const scheduleKind = normalizeScheduleKind(payload.scheduleKind, mode);
+  const { runDate, runTime } = executionTimeForMode(mode, scheduleKind, payload, playDate, target);
 
   const defaultTimeWindowStart = target === "club-newman"
     ? process.env.NEWMAN_TIME_WINDOW_START || process.env.JOCKEY_TIME_WINDOW_START || "12:30"
@@ -180,6 +181,7 @@ function normalizeReservation(payload) {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     status: "pending",
     mode,
+    scheduleKind,
     target,
     playDate,
     runDate,
@@ -222,8 +224,22 @@ function normalizeTarget(value) {
   return targets[target] ? target : "golf-tracker";
 }
 
-function executionTimeForMode(mode, payload, playDate, target) {
-  if (mode === "production") {
+function normalizeScheduleKind(value, mode) {
+  const scheduleKind = String(value || "").trim().toLowerCase();
+  if (["exact", "days-3", "days-2"].includes(scheduleKind)) return scheduleKind;
+  return mode === "development" ? "exact" : "automatic";
+}
+
+function executionTimeForMode(mode, scheduleKind, payload, playDate, target) {
+  if (scheduleKind === "days-3" || scheduleKind === "days-2") {
+    const advanceDays = scheduleKind === "days-3" ? 3 : 2;
+    return {
+      runDate: formatIsoDate(addDays(dateFromIso(playDate), -advanceDays)),
+      runTime: "08:00",
+    };
+  }
+
+  if (mode === "production" && scheduleKind !== "exact") {
     return {
       runDate: formatIsoDate(addDays(dateFromIso(playDate), -targets[target].productionAdvanceDays)),
       runTime: productionRunTime(target),

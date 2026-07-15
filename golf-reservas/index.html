@@ -85,7 +85,6 @@
       margin-bottom: 18px;
     }
 
-    .mode-switch,
     .target-switch {
       display: flex;
       gap: 6px;
@@ -95,13 +94,11 @@
       background: #fff;
     }
 
-    .mode-switch button,
     .target-switch button {
       color: #2f3b35;
       background: transparent;
     }
 
-    .mode-switch button.active,
     .target-switch button.active {
       color: #fff;
       background: #146b43;
@@ -112,23 +109,6 @@
       color: #647168;
       font-size: 13px;
       font-weight: 700;
-    }
-
-    .test-option {
-      display: none;
-      grid-template-columns: 20px 1fr;
-      align-items: center;
-      gap: 10px;
-      padding: 12px;
-      border: 1px solid #c7d4cc;
-      border-radius: 6px;
-      background: #f7faf8;
-    }
-
-    .test-option input {
-      width: 18px;
-      height: 18px;
-      margin: 0;
     }
 
     button {
@@ -222,14 +202,11 @@
         <h1>Reservas de golf</h1>
         <p>Indicá cuándo querés jugar y a qué hora buscar cancha.</p>
       </div>
-      <div class="mode-switch" aria-label="Modo de uso">
-        <button class="active" id="mode-production" type="button">Producción</button>
-        <button id="mode-development" type="button">Desarrollo</button>
-      </div>
     </header>
 
     <form id="reservation-form">
       <input name="mode" type="hidden" value="production">
+      <input name="scheduleKind" type="hidden" value="exact">
       <input name="target" type="hidden" value="golf-tracker">
 
       <div class="target-switch" aria-label="Cancha">
@@ -244,14 +221,14 @@
           <input name="playDate" type="date" required>
         </label>
         <label id="run-date-field">
-          Fecha de ejecución
+          Día de la reserva
           <input name="runDate" type="date" required>
         </label>
       </div>
 
       <div class="grid">
         <label id="run-time-field">
-          Hora de ejecución
+          Hora de la reserva
           <input name="runTime" type="time" step="1" required>
         </label>
         <label>
@@ -260,11 +237,6 @@
         </label>
       </div>
       <div class="hint" id="execution-hint"></div>
-
-      <label class="test-option" id="async-test-field">
-        <input name="dryRun" type="checkbox" value="true" checked>
-        Prueba asíncrona sin confirmar la reserva
-      </label>
 
       <label>
         Matrículas y DNI (hasta 4)
@@ -287,6 +259,8 @@
 
       <div class="actions">
         <button type="submit">Guardar solicitud</button>
+        <button class="secondary" id="save-three-days" type="button">Guardar 3 días antes</button>
+        <button class="secondary" id="save-two-days" type="button">Guardar 2 días antes</button>
         <button class="secondary" id="run-now" type="button">Generar solicitud ahora</button>
       </div>
       <div class="message" id="message"></div>
@@ -316,15 +290,12 @@
     const tbody = document.querySelector("#reservations");
     const message = document.querySelector("#message");
     const runNowButton = document.querySelector("#run-now");
-    const productionButton = document.querySelector("#mode-production");
-    const developmentButton = document.querySelector("#mode-development");
+    const saveThreeDaysButton = document.querySelector("#save-three-days");
+    const saveTwoDaysButton = document.querySelector("#save-two-days");
     const golfTrackerButton = document.querySelector("#target-golf-tracker");
     const jockeyPalermoButton = document.querySelector("#target-jockey-palermo");
     const clubNewmanButton = document.querySelector("#target-club-newman");
-    const runDateField = document.querySelector("#run-date-field");
-    const runTimeField = document.querySelector("#run-time-field");
     const executionHint = document.querySelector("#execution-hint");
-    const asyncTestField = document.querySelector("#async-test-field");
     const targetDefaults = {
       "golf-tracker": {
         bookingText: "practica deportiva feriado",
@@ -348,26 +319,30 @@
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      syncExecutionFields();
-      await createReservation("/api/reservations", "Guardado");
+      await createReservation("/api/reservations", "Guardado", "exact");
     });
 
     runNowButton.addEventListener("click", async () => {
-      syncExecutionFields();
-      await createReservation("/api/reservations/run-now", "Solicitud creada y ejecutándose ahora");
+      await createReservation("/api/reservations/run-now", "Solicitud creada y ejecutándose ahora", "exact");
     });
 
-    productionButton.addEventListener("click", () => setMode("production"));
-    developmentButton.addEventListener("click", () => setMode("development"));
+    saveThreeDaysButton.addEventListener("click", async () => {
+      await createReservation("/api/reservations", "Guardado 3 días antes a las 08:00", "days-3");
+    });
+    saveTwoDaysButton.addEventListener("click", async () => {
+      await createReservation("/api/reservations", "Guardado 2 días antes a las 08:00", "days-2");
+    });
     golfTrackerButton.addEventListener("click", () => setTarget("golf-tracker"));
     jockeyPalermoButton.addEventListener("click", () => setTarget("jockey-palermo"));
     clubNewmanButton.addEventListener("click", () => setTarget("club-newman"));
-    form.playDate.addEventListener("change", syncExecutionFields);
+    form.playDate.addEventListener("change", syncExecutionHint);
 
-    async function createReservation(url, successPrefix) {
+    async function createReservation(url, successPrefix, scheduleKind) {
       setBusy(true);
       try {
         const data = Object.fromEntries(new FormData(form).entries());
+        data.mode = "production";
+        data.scheduleKind = scheduleKind;
         const response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -378,12 +353,11 @@
           message.textContent = payload.error || `No se pudo guardar. HTTP ${response.status}`;
           return;
         }
-        message.textContent = payload.dryRun
-          ? `${successPrefix}. La prueba asíncrona se ejecutará el ${formatRunAt(payload)} sin confirmar la reserva.`
-          : `${successPrefix}. Se intentará reservar el ${formatRunAt(payload)}.`;
+        message.textContent = `${successPrefix}. Se intentará realizar la reserva el ${formatRunAt(payload)}.`;
         form.reset();
         setTarget("golf-tracker");
-        setMode("production");
+        setDefaultRunAt();
+        syncExecutionHint();
         await loadReservations();
       } catch (error) {
         message.textContent = `No se pudo guardar: ${error.message || error}`;
@@ -412,7 +386,7 @@
         }
         tbody.innerHTML = reservations.map((reservation) => `
           <tr>
-            <td>${escapeHtml(reservation.playDate)}${reservation.mode ? `<br>${escapeHtml(reservation.mode)}` : ""}${reservation.dryRun ? "<br>prueba asíncrona" : ""}${reservation.target ? `<br>${escapeHtml(formatTarget(reservation.target))}` : ""}</td>
+            <td>${escapeHtml(reservation.playDate)}${reservation.target ? `<br>${escapeHtml(formatTarget(reservation.target))}` : ""}</td>
             <td>${escapeHtml(formatRunAt(reservation))}</td>
             <td>${escapeHtml(formatPlayers(reservation))}</td>
             <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
@@ -511,21 +485,6 @@
       form.runTime.value = toTimeValue(now);
     }
 
-    function setMode(mode) {
-      const wasProduction = form.mode.value === "production";
-      form.mode.value = mode;
-      const isProduction = mode === "production";
-      productionButton.classList.toggle("active", isProduction);
-      developmentButton.classList.toggle("active", !isProduction);
-      runDateField.style.display = isProduction ? "none" : "grid";
-      runTimeField.style.display = isProduction ? "none" : "grid";
-      asyncTestField.style.display = isProduction ? "none" : "grid";
-      form.runDate.required = !isProduction;
-      form.runTime.required = !isProduction;
-      if (!isProduction && (wasProduction || !form.runDate.value)) setDefaultRunAt();
-      syncExecutionFields();
-    }
-
     function setTarget(target) {
       form.target.value = target;
       const isJockey = target === "jockey-palermo";
@@ -539,38 +498,11 @@
       form.memberIds.value = defaults.memberIds;
       form.timeWindowStart.value = defaults.timeWindowStart;
       form.timeWindowEnd.value = defaults.timeWindowEnd;
-      syncExecutionFields();
+      syncExecutionHint();
     }
 
-    function syncExecutionFields() {
-      if (form.mode.value !== "production") {
-        executionHint.textContent = form.dryRun.checked
-          ? "Desarrollo: el worker ejecutará la prueba a la hora indicada y se detendrá antes de confirmar."
-          : `Desarrollo: ${formatTarget(form.target.value)} hará una reserva real en la fecha y hora indicadas.`;
-        return;
-      }
-
-      if (!form.playDate.value) {
-        executionHint.textContent = `Producción: elegí el día de juego y se calculará la ejecución automática para ${formatTarget(form.target.value)}.`;
-        return;
-      }
-
-      const runAt = productionRunAt(form.playDate.value, form.target.value);
-      form.runDate.value = runAt.date;
-      form.runTime.value = runAt.time;
-      const retryHint = form.target.value === "golf-tracker" ? " Si el intento termina antes de enviar la reserva, volverá a intentar a las 08:10." : "";
-      executionHint.textContent = `Producción: se ejecutará automáticamente el ${runAt.date} a las ${runAt.time}.${retryHint}`;
-    }
-
-    function productionRunAt(playDate, target) {
-      const date = dateFromValue(playDate);
-      date.setDate(date.getDate() - (target === "jockey-palermo" || target === "club-newman" ? 2 : 3));
-      return { date: toDateValue(date), time: target === "golf-tracker" ? "08:01" : "08:00" };
-    }
-
-    function dateFromValue(value) {
-      const [year, month, day] = value.split("-").map(Number);
-      return new Date(year, month - 1, day);
+    function syncExecutionHint() {
+      executionHint.textContent = `Reservas reales en ${formatTarget(form.target.value)}.`;
     }
 
     function toDateValue(date) {
@@ -591,8 +523,7 @@
     }
 
     setTarget("golf-tracker");
-    setMode("production");
-    form.dryRun.addEventListener("change", syncExecutionFields);
+    setDefaultRunAt();
     loadReservations();
     setInterval(loadReservations, 1000);
   </script>

@@ -177,7 +177,7 @@ export function reservationEnv(reservation) {
     GOLF_BOOKING_TEXT: reservation.bookingText || process.env.GOLF_BOOKING_TEXT || "",
     GOLF_TIME_WINDOW_START: reservation.timeWindowStart || process.env.GOLF_TIME_WINDOW_START || "12:30",
     GOLF_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.GOLF_TIME_WINDOW_END || "14:30",
-    GOLF_CONFIRM_BOOKING: reservation.dryRun ? "false" : process.env.GOLF_CONFIRM_BOOKING || "true",
+    GOLF_CONFIRM_BOOKING: reservation.dryRun ? "false" : "true",
     GOLF_HEADLESS: process.env.GOLF_HEADLESS || "true",
     GOLF_MAX_ATTEMPTS: scheduled
       ? process.env.GOLF_SCHEDULED_MAX_ATTEMPTS || "20"
@@ -213,7 +213,7 @@ function jockeyReservationEnv(reservation) {
     JOCKEY_TOURNAMENT_TEXT: reservation.bookingText || target.defaultBookingText(),
     JOCKEY_TIME_WINDOW_START: reservation.timeWindowStart || process.env.JOCKEY_TIME_WINDOW_START || "12:30",
     JOCKEY_TIME_WINDOW_END: reservation.timeWindowEnd || process.env.JOCKEY_TIME_WINDOW_END || "14:30",
-    JOCKEY_CONFIRM_BOOKING: reservation.dryRun ? "false" : process.env.JOCKEY_CONFIRM_BOOKING || "false",
+    JOCKEY_CONFIRM_BOOKING: reservation.dryRun ? "false" : "true",
     JOCKEY_HEADLESS: process.env.JOCKEY_HEADLESS || process.env.GOLF_HEADLESS || "true",
     JOCKEY_USERNAME: username,
     JOCKEY_PASSWORD: target.password() || username,

@@ -53,6 +53,14 @@ test("does not retry manual runs or exceed the retry limit", () => {
   assert.equal(scheduledRetryPlan({ ...reservation, scheduledRetryCount: 1 }, failed), null);
 });
 
+test("does not move an exact-time request to the 08:10 retry", () => {
+  const plan = scheduledRetryPlan({ ...reservation, scheduleKind: "exact" }, {
+    status: "failed",
+    reservationWriteStarted: false,
+  });
+  assert.equal(plan, null);
+});
+
 test("limits only the initial scheduled search window", () => {
   const initialEnv = reservationEnv({
     ...reservation,
@@ -89,4 +97,25 @@ test("scheduled development checks can run without confirming a booking", () => 
   assert.equal(dryRunEnv.GOLF_CONFIRM_BOOKING, "false");
   assert.equal(dryRunEnv.GOLF_NOT_BEFORE_LOCAL, "2026-07-14T08:01:00");
   assert.equal(dryRunEnv.GOLF_SEARCH_DEADLINE_LOCAL, "");
+});
+
+test("production requests always instruct the agents to confirm", () => {
+  const golfEnv = reservationEnv({
+    ...reservation,
+    dryRun: false,
+    memberIds: ["135890"],
+    playerData: [{ memberId: "135890", documentId: "" }],
+    players: 1,
+  });
+  assert.equal(golfEnv.GOLF_CONFIRM_BOOKING, "true");
+
+  const jockeyEnv = reservationEnv({
+    ...reservation,
+    target: "jockey-palermo",
+    dryRun: false,
+    memberIds: ["135890"],
+    playerData: [{ memberId: "135890", documentId: "" }],
+    players: 1,
+  });
+  assert.equal(jockeyEnv.JOCKEY_CONFIRM_BOOKING, "true");
 });

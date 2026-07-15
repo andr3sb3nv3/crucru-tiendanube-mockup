@@ -8,6 +8,7 @@ export function scheduledRetryPlan(reservation, result, options = {}) {
 
   if (result.status !== "failed") return null;
   if (reservation.mode !== "production" || reservation.runMode !== "scheduled") return null;
+  if (reservation.scheduleKind === "exact") return null;
   if (reservation.target !== "golf-tracker") return null;
   if (result.reservationWriteStarted || reservation.reservationWriteStarted) return null;
   if (retryCount >= maxRetries) return null;
