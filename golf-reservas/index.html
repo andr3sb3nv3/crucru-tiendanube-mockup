@@ -175,6 +175,10 @@
       font-weight: 700;
     }
 
+    .message.problem {
+      color: #b42318;
+    }
+
     .error {
       color: #b42318;
       font-size: 12px;
@@ -350,17 +354,17 @@
         });
         const payload = await readJsonResponse(response);
         if (!response.ok) {
-          message.textContent = payload.error || `No se pudo guardar. HTTP ${response.status}`;
+          setMessage(payload.error || `No se pudo guardar. HTTP ${response.status}`, true);
           return;
         }
-        message.textContent = `${successPrefix}. Se intentará realizar la reserva el ${formatRunAt(payload)}.`;
+        setMessage(`${successPrefix}. Se intentará realizar la reserva el ${formatRunAt(payload)}.`);
         form.reset();
         setTarget("golf-tracker");
         setDefaultRunAt();
         syncExecutionHint();
         await loadReservations();
       } catch (error) {
-        message.textContent = `No se pudo guardar: ${error.message || error}`;
+        setMessage(`No se pudo guardar: ${error.message || error}`, true);
       } finally {
         setBusy(false, { keepMessage: true });
       }
@@ -381,7 +385,7 @@
         const response = await fetch("/api/reservations", { cache: "no-store" });
         const reservations = await readJsonResponse(response);
         if (!response.ok) {
-          message.textContent = reservations.error || `No pude actualizar solicitudes. HTTP ${response.status}`;
+          setMessage(reservations.error || `No pude actualizar solicitudes. HTTP ${response.status}`, true);
           return;
         }
         tbody.innerHTML = reservations.map((reservation) => `
@@ -403,7 +407,19 @@
           </tr>
         `).join("");
       } catch (error) {
-        message.textContent = `No pude actualizar solicitudes: ${error.message || error}`;
+        setMessage(`No pude actualizar solicitudes: ${error.message || error}`, true);
+      }
+    }
+
+    async function loadHealth() {
+      try {
+        const response = await fetch("/api/health", { cache: "no-store" });
+        const health = await readJsonResponse(response);
+        if (response.ok && health.storage && !health.storage.durable) {
+          setMessage("Las solicitudes programadas están deshabilitadas hasta vincular PostgreSQL en Railway. Generar solicitud ahora sigue disponible.", true);
+        }
+      } catch {
+        // La tabla mostrará el error de conexión si el backend no está disponible.
       }
     }
 
@@ -415,7 +431,7 @@
       if (runId) {
         const response = await fetch(`/api/reservations/${encodeURIComponent(runId)}/run-now`, { method: "POST" });
         const payload = await readJsonResponse(response);
-        if (!response.ok) message.textContent = payload.error || `No pude iniciar la solicitud. HTTP ${response.status}`;
+        if (!response.ok) setMessage(payload.error || `No pude iniciar la solicitud. HTTP ${response.status}`, true);
         await loadReservations();
         return;
       }
@@ -429,10 +445,15 @@
         button.disabled = isBusy;
       });
       if (isBusy) {
-        message.textContent = "Procesando...";
+        setMessage("Procesando...");
       } else if (!options.keepMessage) {
-        message.textContent = "";
+        setMessage("");
       }
+    }
+
+    function setMessage(text, isProblem = false) {
+      message.textContent = text;
+      message.classList.toggle("problem", isProblem);
     }
 
     function formatPlayers(reservation) {
@@ -524,6 +545,7 @@
 
     setTarget("golf-tracker");
     setDefaultRunAt();
+    loadHealth();
     loadReservations();
     setInterval(loadReservations, 1000);
   </script>

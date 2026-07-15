@@ -109,6 +109,7 @@ const server = http.createServer(async (request, response) => {
     if (request.method === "POST" && request.url === "/api/reservations") {
       const payload = await readJson(request);
       const reservation = normalizeReservation(payload);
+      assertDurableScheduler();
       await assertNoPreviousWrite(reservation);
       await insertReservation(reservation);
       wakeWorker();
@@ -214,6 +215,16 @@ function normalizeReservation(payload) {
     reservationWriteStarted: false,
     dryRun: mode === "development" && truthyValue(payload.dryRun),
   };
+}
+
+function assertDurableScheduler() {
+  const runningOnRailway = Boolean(
+    process.env.RAILWAY_PROJECT_ID
+    || process.env.RAILWAY_ENVIRONMENT_ID
+    || process.env.RAILWAY_PUBLIC_DOMAIN,
+  );
+  if (!runningOnRailway || storeBackend() === "postgres") return;
+  throw new Error("No puedo guardar una solicitud programada: DATABASE_URL no está vinculada al servicio de la aplicación en Railway. Generar solicitud ahora sigue disponible.");
 }
 
 async function assertNoPreviousWrite(reservation) {
