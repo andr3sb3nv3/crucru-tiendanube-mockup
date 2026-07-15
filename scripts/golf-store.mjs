@@ -7,6 +7,10 @@ const useDatabase = Boolean(process.env.DATABASE_URL);
 let pool;
 let initialized = false;
 
+export function storeBackend() {
+  return useDatabase ? "postgres" : "file";
+}
+
 export async function initStore() {
   if (initialized) return;
   initialized = true;

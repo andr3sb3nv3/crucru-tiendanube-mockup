@@ -12,6 +12,7 @@ import {
   insertReservation,
   listReservations,
   recoverStaleReservations,
+  storeBackend,
   updateReservation,
 } from "./golf-store.mjs";
 import { executeReservation } from "./golf-reservation-runner.mjs";
@@ -30,6 +31,7 @@ const workerMaxAttempts = positiveNumber(process.env.GOLF_WORKER_MAX_ATTEMPTS, 2
 const workerPrewarmMs = positiveNumber(process.env.GOLF_WORKER_PREWARM_SECONDS, 90) * 1000;
 const enableWorker = booleanEnv("GOLF_RUNNER_ENABLED", true);
 const workerId = `${os.hostname()}-${process.pid}-${randomUUID().slice(0, 8)}`;
+const processStartedAt = new Date().toISOString();
 const activeJobs = new Map();
 let workerTimer;
 let workerTickInFlight = false;
@@ -72,13 +74,23 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && request.url === "/api/health") {
+      const reservations = await listReservations();
+      const pending = reservations
+        .filter((reservation) => reservation.status === "pending")
+        .sort((left, right) => String(left.runAtLocal || "").localeCompare(String(right.runAtLocal || "")));
       return json(response, {
         ok: true,
+        storage: {
+          backend: storeBackend(),
+          durable: storeBackend() === "postgres",
+        },
         worker: {
           enabled: enableWorker,
           active: activeJobs.size,
           concurrency: workerConcurrency,
           pollMs: workerPollMs,
+          nextPending: pending[0]?.runAtLocal || null,
+          pending: pending.length,
         },
         schedule: {
           golfTrackerFirstAttempt: productionRunTime("golf-tracker"),
@@ -86,6 +98,7 @@ const server = http.createServer(async (request, response) => {
           safeRetry: configuredTime("GOLF_SCHEDULED_RETRY_TIME", "08:10"),
         },
         now: new Date().toISOString(),
+        processStartedAt,
       });
     }
 
