@@ -3,6 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { chromium } from "playwright";
 import { RESERVATION_WRITE_STARTED_MARKER } from "./golf-reservation-retry.mjs";
+import { allowsSingleSlotFallback, compareLineGroups } from "./golf-slot-policy.mjs";
 
 process.env.TZ = "America/Argentina/Buenos_Aires";
 loadEnvFile(".env.golf");
@@ -878,8 +879,12 @@ async function findSlot() {
     );
     const sameLineFallback = await bestSlotForPlayerCount(false);
     if (sameLineFallback) return sameLineFallback;
+
+    console.log(`No encontré ninguna línea con ${config.players} espacios libres; no usaré una línea parcialmente ocupada.`);
+    return null;
   }
 
+  if (!allowsSingleSlotFallback(config.players)) return null;
   const slot = await earliestVisibleSlotInWindow(page.locator(".test_cell_business"), true);
   if (slot) return slot;
 
@@ -894,17 +899,18 @@ async function findSlot() {
 
 async function bestSlotForPlayerCount(respectWindow) {
   const matches = await collectSlotCandidates(
-    page.locator(".test_cell_business"),
+    page.locator(".test_cell_business, .test_cell_inner"),
     respectWindow,
     { strictAvailable: true },
   );
   const unique = uniqueSlotCandidates(matches);
   const groups = groupSlotCandidatesByLine(unique)
     .filter((group) => countDistinctColumns(group.candidates) >= config.players)
-    .sort((a, b) => {
-      const timeDiff = a.minutes - b.minutes;
-      return timeDiff || averageScore(b.candidates) - averageScore(a.candidates) || a.y - b.y;
-    });
+    .map((group) => ({ ...group, score: averageScore(group.candidates) }))
+    .sort((a, b) => compareLineGroups(a, b, {
+      respectWindow,
+      windowEndMinutes: timeToMinutes(config.timeWindowEnd),
+    }));
 
   if (booleanEnv("GOLF_DEBUG_SLOTS", false)) {
     console.log("Líneas candidatas:", JSON.stringify(groups.slice(0, 12).map((group) => ({
@@ -922,10 +928,15 @@ async function bestSlotForPlayerCount(respectWindow) {
       await candidate.item.scrollIntoViewIfNeeded().catch(() => {});
       await page.waitForTimeout(25);
       const topHit = await topHitInfo(candidate.item);
-      if (topHit.isTopMost) topMostCandidates.push(candidate);
+      const chatOnlyOcclusion = /caddy virtual|manual de usuario/i.test(`${topHit.topText} ${topHit.topClassName}`);
+      if (topHit.isTopMost || chatOnlyOcclusion) {
+        candidate.directlyClickable = topHit.isTopMost;
+        topMostCandidates.push(candidate);
+      }
       if (countDistinctColumns(topMostCandidates) >= config.players) {
-        const chosen = firstCandidatePerColumn(topMostCandidates).sort((a, b) => a.box.x - b.box.x)[0];
-        const scope = respectWindow ? "dentro del rango elegido" : "fuera del rango elegido";
+        const chosen = firstCandidatePerColumn(topMostCandidates)
+          .sort((a, b) => Number(b.directlyClickable) - Number(a.directlyClickable) || a.box.x - b.box.x)[0];
+        const scope = isTimeInWindow(group.time) ? "dentro del rango elegido" : "fuera del rango elegido";
         console.log(`Mejor línea para ${config.players} jugadores: ${group.time} (${scope}, ${countDistinctColumns(topMostCandidates)} espacios visibles)`);
         return chosen.item;
       }
@@ -1088,7 +1099,7 @@ async function topHitInfo(locator) {
 
 function isStrictAvailableSlot(meta = {}) {
   const className = String(meta.className || "");
-  if (!/test_cell_business/i.test(className)) return false;
+  if (!/test_cell_(business|inner)/i.test(className)) return false;
   if (Number(meta.childIcons || 0) > 0) return false;
   return true;
 }
