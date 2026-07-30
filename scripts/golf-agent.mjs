@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { chromium } from "playwright";
+import { calendarMonthFromTitle } from "./golf-calendar.mjs";
 import { RESERVATION_WRITE_STARTED_MARKER } from "./golf-reservation-retry.mjs";
 import { allowsSingleSlotFallback, compareLineGroups } from "./golf-slot-policy.mjs";
 
@@ -791,6 +792,7 @@ async function chooseDateFromCalendar(date) {
 
   const calendar = await visibleCalendar();
   if (!calendar) return false;
+  if (!(await alignCalendarMonth(calendar, target))) return false;
   const dayButton = await calendarDayButton(calendar, targetDay, 1500);
 
   if (dayButton) {
@@ -800,37 +802,44 @@ async function chooseDateFromCalendar(date) {
     return true;
   }
 
-  const nextButton = await firstVisible([
-    calendar.getByRole("button", { name: /next|siguiente|›|»/i }).first(),
-    calendar.locator("button[aria-label*='Next' i], button[aria-label*='Siguiente' i]").first(),
-  ], 600);
-
-  if (nextButton) {
-    await nextButton.click({ force: true });
-    await page.waitForTimeout(300);
-    const nextMonthDay = await calendarDayButton(calendar, targetDay, 1000);
-    if (nextMonthDay) {
-      await nextMonthDay.click({ force: true });
-      await page.waitForLoadState("networkidle").catch(() => {});
-      await page.waitForTimeout(800);
-      return true;
-    }
-  }
-
   return false;
 }
 
 async function visibleCalendar() {
   return firstVisible([
+    page.locator(".calendar_month").last(),
     page.locator("ngb-datepicker").last(),
     page.locator(".datepicker, [class*='datepicker']").last(),
     page.locator(".ngb-dp-month").last(),
   ], 1200);
 }
 
+async function alignCalendarMonth(calendar, targetDate) {
+  const title = calendar.locator(".calendar_title").first();
+  if (!(await isVisible(title, 500))) return true;
+
+  for (let step = 0; step < 24; step += 1) {
+    const current = calendarMonthFromTitle(await title.innerText().catch(() => ""));
+    if (!current) return false;
+
+    const targetIndex = targetDate.getFullYear() * 12 + targetDate.getMonth();
+    const currentIndex = current.year * 12 + current.month;
+    if (targetIndex === currentIndex) return true;
+
+    const direction = targetIndex > currentIndex ? "right" : "left";
+    const arrow = calendar.locator(`.calendar_title${direction}`).first();
+    if (!(await isVisible(arrow, 500))) return false;
+    await arrow.click({ force: true });
+    await page.waitForTimeout(250);
+  }
+
+  return false;
+}
+
 async function calendarDayButton(calendar, day, timeout) {
   const dayMatcher = new RegExp(`^\\s*${day}\\s*$`);
   return firstVisible([
+    calendar.locator(".calendar_day:not(.calendar_dayother)").filter({ hasText: dayMatcher }).first(),
     calendar.locator(".ngb-dp-day").filter({ hasText: dayMatcher }).first(),
     calendar.getByRole("button", { name: new RegExp(`^${day}$`) }).first(),
     calendar.locator("button, [role='button']").filter({ hasText: dayMatcher }).first(),
