@@ -1,7 +1,7 @@
 export const RESERVATION_WRITE_STARTED_MARKER = "Reserva: comenzó el envío al sitio.";
 
 export function scheduledRetryPlan(reservation, result, options = {}) {
-  const retryTime = String(options.retryTime || "08:10");
+  const retryTime = String(options.retryTime || "07:10");
   const maxRetries = positiveNumber(options.maxRetries, 1);
   const retryCount = Number(reservation.scheduledRetryCount || 0);
   const retryDate = String(reservation.bookingOpenDate || reservation.runDate || "");

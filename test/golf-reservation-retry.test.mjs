@@ -10,14 +10,14 @@ const reservation = {
   runMode: "scheduled",
   target: "golf-tracker",
   runDate: "2026-07-14",
-  runTime: "08:01",
-  runAtLocal: "2026-07-14T08:01:00",
+  runTime: "07:00",
+  runAtLocal: "2026-07-14T07:00:00",
   bookingOpenDate: "2026-07-14",
   scheduledRetryCount: 0,
   lastStdout: "Primer intento.\n",
 };
 
-test("schedules one safe retry at 08:10 before the first reservation write", () => {
+test("schedules one safe retry at 07:10 before the first reservation write", () => {
   const plan = scheduledRetryPlan(reservation, {
     status: "failed",
     stderr: "No apareció el botón Reservar.",
@@ -25,15 +25,15 @@ test("schedules one safe retry at 08:10 before the first reservation write", () 
   });
   assert.deepEqual(plan, {
     retryDate: "2026-07-14",
-    retryTime: "08:10",
-    retryAtLocal: "2026-07-14T08:10:00",
+    retryTime: "07:10",
+    retryAtLocal: "2026-07-14T07:10:00",
     retryNumber: 1,
     reason: "No apareció el botón Reservar.",
   });
 
   const queued = applyScheduledRetry(reservation, plan);
   assert.equal(queued.status, "pending");
-  assert.equal(queued.runAtLocal, "2026-07-14T08:10:00");
+  assert.equal(queued.runAtLocal, "2026-07-14T07:10:00");
   assert.equal(queued.scheduledRetryCount, 1);
   assert.match(queued.lastStdout, /Reintento automático 1 programado/);
 });
@@ -53,7 +53,7 @@ test("does not retry manual runs or exceed the retry limit", () => {
   assert.equal(scheduledRetryPlan({ ...reservation, scheduledRetryCount: 1 }, failed), null);
 });
 
-test("does not move an exact-time request to the 08:10 retry", () => {
+test("does not move an exact-time request to the 07:10 retry", () => {
   const plan = scheduledRetryPlan({ ...reservation, scheduleKind: "exact" }, {
     status: "failed",
     reservationWriteStarted: false,
@@ -68,19 +68,19 @@ test("limits only the initial scheduled search window", () => {
     playerData: [{ memberId: "135890", documentId: "" }],
     players: 1,
   });
-  assert.equal(initialEnv.GOLF_NOT_BEFORE_LOCAL, "2026-07-14T08:01:00");
-  assert.equal(initialEnv.GOLF_SEARCH_DEADLINE_LOCAL, "2026-07-14T08:08:00");
+  assert.equal(initialEnv.GOLF_NOT_BEFORE_LOCAL, "2026-07-14T07:00:00");
+  assert.equal(initialEnv.GOLF_SEARCH_DEADLINE_LOCAL, "2026-07-14T07:08:00");
 
   const retryEnv = reservationEnv({
     ...reservation,
-    runTime: "08:10",
-    runAtLocal: "2026-07-14T08:10:00",
+    runTime: "07:10",
+    runAtLocal: "2026-07-14T07:10:00",
     scheduledRetryCount: 1,
     memberIds: ["135890"],
     playerData: [{ memberId: "135890", documentId: "" }],
     players: 1,
   });
-  assert.equal(retryEnv.GOLF_NOT_BEFORE_LOCAL, "2026-07-14T08:10:00");
+  assert.equal(retryEnv.GOLF_NOT_BEFORE_LOCAL, "2026-07-14T07:10:00");
   assert.equal(retryEnv.GOLF_SEARCH_DEADLINE_LOCAL, "");
 });
 
@@ -95,7 +95,7 @@ test("scheduled development checks can run without confirming a booking", () => 
   });
 
   assert.equal(dryRunEnv.GOLF_CONFIRM_BOOKING, "false");
-  assert.equal(dryRunEnv.GOLF_NOT_BEFORE_LOCAL, "2026-07-14T08:01:00");
+  assert.equal(dryRunEnv.GOLF_NOT_BEFORE_LOCAL, "2026-07-14T07:00:00");
   assert.equal(dryRunEnv.GOLF_SEARCH_DEADLINE_LOCAL, "");
 });
 

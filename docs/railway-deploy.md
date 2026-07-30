@@ -9,7 +9,7 @@ En produccion la app usa:
 - Playwright/Chromium: corre como proceso hijo dentro del contenedor Docker.
 - Cron opcional: solo funciona como respaldo; no es el disparador principal de las 08:00.
 
-El worker revisa PostgreSQL cada segundo. Golf Tracker prepara el navegador 90 segundos antes, inicia sesion y hace el primer intento a las 08:01. Si a las 08:08 todavia no comenzo a enviar la primera reserva, cierra ese intento y vuelve automaticamente a la cola para precalentar un segundo intento a las 08:10. El boton `Generar solicitud ahora` usa la misma cola y el mismo ejecutor.
+El worker revisa PostgreSQL cada segundo. Golf Tracker prepara el navegador 90 segundos antes, inicia sesion y hace el primer intento a las 07:00. Si a las 07:08 todavia no comenzo a enviar la primera reserva, cierra ese intento y vuelve automaticamente a la cola para precalentar un segundo intento a las 07:10. El boton `Generar solicitud ahora` usa la misma cola y el mismo ejecutor. Jockey Club y Club Newman mantienen las ejecuciones automaticas a las 08:00.
 
 Railway Cron no debe ser el disparador principal: usa UTC y no garantiza precision al minuto. Localmente, si no existe `DATABASE_URL`, la app sigue usando `data/golf-reservations.json`.
 
@@ -44,10 +44,10 @@ GOLF_TIME_WINDOW_START=12:30
 GOLF_TIME_WINDOW_END=14:30
 GOLF_SCHEDULED_MAX_ATTEMPTS=20
 GOLF_SCHEDULED_POLL_SECONDS=1
-GOLF_PRODUCTION_RUN_TIME=08:01
-GOLF_SCHEDULED_RETRY_TIME=08:10
+GOLF_PRODUCTION_RUN_TIME=07:00
+GOLF_SCHEDULED_RETRY_TIME=07:10
 GOLF_SCHEDULED_RETRIES=1
-GOLF_INITIAL_ATTEMPT_DEADLINE_TIME=08:08
+GOLF_INITIAL_ATTEMPT_DEADLINE_TIME=07:08
 GOLF_RESERVATION_SETTLE_SECONDS=240
 GOLF_BASE_RESERVATION_SECONDS=240
 GOLF_RESERVATION_TRANSITION_SECONDS=90

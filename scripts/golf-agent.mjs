@@ -789,36 +789,28 @@ async function chooseDateFromCalendar(date) {
   await visualCalendarButton.click({ force: true });
   await page.waitForTimeout(500);
 
-  const dayButton = await firstVisible([
-    page.getByRole("button", { name: new RegExp(`^${targetDay}$`) }).first(),
-    page.locator("button, [role='button'], .ngb-dp-day").filter({ hasText: new RegExp(`^\\s*${targetDay}\\s*$`) }).first(),
-    page.locator("ngb-datepicker, .ngb-dp-month, .dropdown-menu, .datepicker").getByText(new RegExp(`^\\s*${targetDay}\\s*$`)).first(),
-    page.getByText(new RegExp(`^\\s*${targetDay}\\s*$`)).first(),
-  ], 1500);
+  const calendar = await visibleCalendar();
+  if (!calendar) return false;
+  const dayButton = await calendarDayButton(calendar, targetDay, 1500);
 
   if (dayButton) {
-    await dayButton.click();
+    await dayButton.click({ force: true });
     await page.waitForLoadState("networkidle").catch(() => {});
     await page.waitForTimeout(800);
     return true;
   }
 
   const nextButton = await firstVisible([
-    page.getByRole("button", { name: /next|siguiente|›|»/i }).first(),
-    page.locator("button[aria-label*='Next' i], button[aria-label*='Siguiente' i]").first(),
+    calendar.getByRole("button", { name: /next|siguiente|›|»/i }).first(),
+    calendar.locator("button[aria-label*='Next' i], button[aria-label*='Siguiente' i]").first(),
   ], 600);
 
   if (nextButton) {
-    await nextButton.click();
+    await nextButton.click({ force: true });
     await page.waitForTimeout(300);
-    const nextMonthDay = await firstVisible([
-      page.getByRole("button", { name: new RegExp(`^${targetDay}$`) }).first(),
-      page.locator("button, [role='button'], .ngb-dp-day").filter({ hasText: new RegExp(`^\\s*${targetDay}\\s*$`) }).first(),
-      page.locator("ngb-datepicker, .ngb-dp-month, .dropdown-menu, .datepicker").getByText(new RegExp(`^\\s*${targetDay}\\s*$`)).first(),
-      page.getByText(new RegExp(`^\\s*${targetDay}\\s*$`)).first(),
-    ], 1000);
+    const nextMonthDay = await calendarDayButton(calendar, targetDay, 1000);
     if (nextMonthDay) {
-      await nextMonthDay.click();
+      await nextMonthDay.click({ force: true });
       await page.waitForLoadState("networkidle").catch(() => {});
       await page.waitForTimeout(800);
       return true;
@@ -826,6 +818,23 @@ async function chooseDateFromCalendar(date) {
   }
 
   return false;
+}
+
+async function visibleCalendar() {
+  return firstVisible([
+    page.locator("ngb-datepicker").last(),
+    page.locator(".datepicker, [class*='datepicker']").last(),
+    page.locator(".ngb-dp-month").last(),
+  ], 1200);
+}
+
+async function calendarDayButton(calendar, day, timeout) {
+  const dayMatcher = new RegExp(`^\\s*${day}\\s*$`);
+  return firstVisible([
+    calendar.locator(".ngb-dp-day").filter({ hasText: dayMatcher }).first(),
+    calendar.getByRole("button", { name: new RegExp(`^${day}$`) }).first(),
+    calendar.locator("button, [role='button']").filter({ hasText: dayMatcher }).first(),
+  ], timeout);
 }
 
 async function topDateControlButton() {

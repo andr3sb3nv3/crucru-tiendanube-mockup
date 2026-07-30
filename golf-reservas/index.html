@@ -187,6 +187,13 @@
       white-space: pre-wrap;
     }
 
+    .copy-error {
+      display: block;
+      margin-top: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
     @media (max-width: 720px) {
       .grid {
         grid-template-columns: 1fr;
@@ -262,7 +269,7 @@
       </div>
 
       <div class="actions">
-        <button type="submit">Guardar solicitud</button>
+        <button type="submit">Guardar fecha y hora exactas</button>
         <button class="secondary" id="save-three-days" type="button">Guardar 3 días antes</button>
         <button class="secondary" id="save-two-days" type="button">Guardar 2 días antes</button>
         <button class="secondary" id="run-now" type="button">Generar solicitud ahora</button>
@@ -300,6 +307,7 @@
     const jockeyPalermoButton = document.querySelector("#target-jockey-palermo");
     const clubNewmanButton = document.querySelector("#target-club-newman");
     const executionHint = document.querySelector("#execution-hint");
+    let loadedReservations = [];
     const targetDefaults = {
       "golf-tracker": {
         bookingText: "practica deportiva feriado",
@@ -331,10 +339,18 @@
     });
 
     saveThreeDaysButton.addEventListener("click", async () => {
-      await createReservation("/api/reservations", "Guardado 3 días antes a las 08:00", "days-3");
+      await createReservation(
+        "/api/reservations",
+        `Guardado 3 días antes a las ${scheduledTimeForTarget(form.target.value)}`,
+        "days-3"
+      );
     });
     saveTwoDaysButton.addEventListener("click", async () => {
-      await createReservation("/api/reservations", "Guardado 2 días antes a las 08:00", "days-2");
+      await createReservation(
+        "/api/reservations",
+        `Guardado 2 días antes a las ${scheduledTimeForTarget(form.target.value)}`,
+        "days-2"
+      );
     });
     golfTrackerButton.addEventListener("click", () => setTarget("golf-tracker"));
     jockeyPalermoButton.addEventListener("click", () => setTarget("jockey-palermo"));
@@ -388,6 +404,7 @@
           setMessage(reservations.error || `No pude actualizar solicitudes. HTTP ${response.status}`, true);
           return;
         }
+        loadedReservations = reservations;
         tbody.innerHTML = reservations.map((reservation) => `
           <tr>
             <td>${escapeHtml(reservation.playDate)}${reservation.target ? `<br>${escapeHtml(formatTarget(reservation.target))}` : ""}</td>
@@ -395,7 +412,11 @@
             <td>${escapeHtml(formatPlayers(reservation))}</td>
             <td>${escapeHtml(reservation.timeWindowStart)}-${escapeHtml(reservation.timeWindowEnd)}</td>
             <td><span class="status">${escapeHtml(formatStatus(reservation.status))}</span></td>
-            <td class="error">${escapeHtml(formatLastStatus(reservation))}</td>
+            <td class="error">${escapeHtml(formatLastStatus(reservation))}
+              ${formatLastStatus(reservation)
+                ? `<button class="secondary copy-error" type="button" data-copy-error="${escapeHtml(reservation.id)}">Copiar error</button>`
+                : ""}
+            </td>
             <td>
               <div class="actions">
                 ${reservation.reservationWriteStarted
@@ -428,6 +449,15 @@
     tbody.addEventListener("click", async (event) => {
       const deleteId = event.target.dataset.delete;
       const runId = event.target.dataset.run;
+      const copyErrorId = event.target.dataset.copyError;
+      if (copyErrorId) {
+        const reservation = loadedReservations.find((item) => item.id === copyErrorId);
+        if (reservation) {
+          await copyText(formatErrorForCopy(reservation));
+          setMessage("Error copiado. Ya podés pegarlo en el chat.");
+        }
+        return;
+      }
       if (runId) {
         const response = await fetch(`/api/reservations/${encodeURIComponent(runId)}/run-now`, { method: "POST" });
         const payload = await readJsonResponse(response);
@@ -499,6 +529,36 @@
       return lines.slice(-6).join("\n");
     }
 
+    function formatErrorForCopy(reservation) {
+      return [
+        `Juego: ${reservation.playDate} - ${formatTarget(reservation.target)}`,
+        `Ejecución: ${formatRunAt(reservation)}`,
+        `Estado: ${formatStatus(reservation.status)}`,
+        "Último paso:",
+        formatLastStatus(reservation)
+      ].join("\n");
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return;
+        } catch {
+          // Algunos navegadores bloquean Clipboard API; usamos el método clásico.
+        }
+      }
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.append(textarea);
+      textarea.select();
+      const copied = document.execCommand("copy");
+      textarea.remove();
+      if (!copied) throw new Error("El navegador no permitió copiar el error.");
+    }
+
     function setDefaultRunAt() {
       const now = new Date();
       now.setSeconds(now.getSeconds() + 20);
@@ -523,7 +583,11 @@
     }
 
     function syncExecutionHint() {
-      executionHint.textContent = `Reservas reales en ${formatTarget(form.target.value)}.`;
+      executionHint.textContent = `Reservas reales en ${formatTarget(form.target.value)}. Horario automático: ${scheduledTimeForTarget(form.target.value)}.`;
+    }
+
+    function scheduledTimeForTarget(target) {
+      return target === "golf-tracker" ? "07:00" : "08:00";
     }
 
     function toDateValue(date) {

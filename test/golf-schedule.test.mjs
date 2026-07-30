@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isExecutionTime, localDateTime, reservationIsDue } from "../scripts/golf-schedule.mjs";
+import {
+  executionPrecedesBookingOpen,
+  isExecutionTime,
+  localDateTime,
+  reservationIsDue,
+  shiftIsoDate,
+} from "../scripts/golf-schedule.mjs";
 
 test("keeps seconds in development execution times", () => {
   assert.equal(isExecutionTime("16:36:43"), true);
@@ -42,4 +48,24 @@ test("an exact production request waits for its selected second", () => {
 
   assert.equal(reservationIsDue(reservation, new Date(2026, 6, 15, 12, 0, 19), 90_000), false);
   assert.equal(reservationIsDue(reservation, new Date(2026, 6, 15, 12, 0, 20), 90_000), true);
+});
+
+test("calculates booking-open dates without depending on the machine timezone", () => {
+  assert.equal(shiftIsoDate("2026-07-26", -3), "2026-07-23");
+  assert.equal(shiftIsoDate("2026-08-01", -2), "2026-07-30");
+});
+
+test("detects an exact execution scheduled before booking opens", () => {
+  assert.equal(
+    executionPrecedesBookingOpen("2026-07-23T06:59:59", "2026-07-23", "07:00"),
+    true,
+  );
+  assert.equal(
+    executionPrecedesBookingOpen("2026-07-23T07:00:00", "2026-07-23", "07:00"),
+    false,
+  );
+  assert.equal(
+    executionPrecedesBookingOpen("2026-07-24T12:00:00", "2026-07-23", "08:00"),
+    false,
+  );
 });

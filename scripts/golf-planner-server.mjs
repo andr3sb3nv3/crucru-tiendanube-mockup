@@ -17,7 +17,13 @@ import {
 } from "./golf-store.mjs";
 import { executeReservation } from "./golf-reservation-runner.mjs";
 import { applyScheduledRetry, scheduledRetryPlan } from "./golf-reservation-retry.mjs";
-import { isExecutionTime, localDateTime, reservationIsDue } from "./golf-schedule.mjs";
+import {
+  executionPrecedesBookingOpen,
+  isExecutionTime,
+  localDateTime,
+  reservationIsDue,
+  shiftIsoDate,
+} from "./golf-schedule.mjs";
 
 process.env.TZ = "America/Argentina/Buenos_Aires";
 loadEnvFile(".env.golf");
@@ -94,8 +100,8 @@ const server = http.createServer(async (request, response) => {
         },
         schedule: {
           golfTrackerFirstAttempt: productionRunTime("golf-tracker"),
-          initialAttemptDeadline: configuredTime("GOLF_INITIAL_ATTEMPT_DEADLINE_TIME", "08:08"),
-          safeRetry: configuredTime("GOLF_SCHEDULED_RETRY_TIME", "08:10"),
+          initialAttemptDeadline: configuredTime("GOLF_INITIAL_ATTEMPT_DEADLINE_TIME", "07:08"),
+          safeRetry: configuredTime("GOLF_SCHEDULED_RETRY_TIME", "07:10"),
         },
         now: new Date().toISOString(),
         processStartedAt,
@@ -110,6 +116,7 @@ const server = http.createServer(async (request, response) => {
       const payload = await readJson(request);
       const reservation = normalizeReservation(payload);
       assertDurableScheduler();
+      assertExecutionNotBeforeBookingOpen(reservation);
       await assertNoPreviousWrite(reservation);
       await insertReservation(reservation);
       wakeWorker();
@@ -176,6 +183,7 @@ function normalizeReservation(payload) {
   const target = normalizeTarget(payload.target);
   const scheduleKind = normalizeScheduleKind(payload.scheduleKind, mode);
   const { runDate, runTime } = executionTimeForMode(mode, scheduleKind, payload, playDate, target);
+  const bookingOpenDate = shiftIsoDate(playDate, -targets[target].productionAdvanceDays);
 
   const defaultTimeWindowStart = target === "club-newman"
     ? process.env.NEWMAN_TIME_WINDOW_START || process.env.JOCKEY_TIME_WINDOW_START || "12:30"
@@ -201,7 +209,7 @@ function normalizeReservation(payload) {
     runDate,
     runTime,
     runAtLocal: localDateTime(runDate, runTime),
-    bookingOpenDate: runDate,
+    bookingOpenDate,
     memberIds,
     playerData,
     players: memberIds.length,
@@ -215,6 +223,19 @@ function normalizeReservation(payload) {
     reservationWriteStarted: false,
     dryRun: mode === "development" && truthyValue(payload.dryRun),
   };
+}
+
+function assertExecutionNotBeforeBookingOpen(reservation) {
+  if (reservation.mode !== "production" || reservation.scheduleKind !== "exact") return;
+  const bookingOpenTime = productionRunTime(reservation.target);
+  if (!executionPrecedesBookingOpen(reservation.runAtLocal, reservation.bookingOpenDate, bookingOpenTime)) return;
+
+  const advanceDays = targets[reservation.target].productionAdvanceDays;
+  throw new Error(
+    `${targets[reservation.target].label} abre la reserva el ${reservation.bookingOpenDate} a las ${bookingOpenTime}. `
+    + `La ejecución elegida (${reservation.runAtLocal.replace("T", " ")}) ocurre antes. `
+    + `Usá “Guardar ${advanceDays} días antes” o elegí una hora posterior.`,
+  );
 }
 
 function assertDurableScheduler() {
@@ -259,7 +280,7 @@ function executionTimeForMode(mode, scheduleKind, payload, playDate, target) {
     const advanceDays = scheduleKind === "days-3" ? 3 : 2;
     return {
       runDate: formatIsoDate(addDays(dateFromIso(playDate), -advanceDays)),
-      runTime: "08:00",
+      runTime: productionRunTime(target),
     };
   }
 
@@ -313,7 +334,7 @@ async function workerTick() {
         const execution = executeReservation(reservation)
           .then(async (result) => {
             const retryPlan = scheduledRetryPlan(reservation, result, {
-              retryTime: configuredTime("GOLF_SCHEDULED_RETRY_TIME", "08:10"),
+              retryTime: configuredTime("GOLF_SCHEDULED_RETRY_TIME", "07:10"),
               maxRetries: positiveNumber(process.env.GOLF_SCHEDULED_RETRIES, 1),
             });
             if (!retryPlan) return result;
@@ -381,7 +402,7 @@ function makeImmediate(reservation, initialLog) {
 
 function productionRunTime(target) {
   if (target === "golf-tracker") {
-    return configuredTime("GOLF_PRODUCTION_RUN_TIME", "08:01");
+    return configuredTime("GOLF_PRODUCTION_RUN_TIME", "07:00");
   }
   return configuredTime("JOCKEY_PRODUCTION_RUN_TIME", "08:00");
 }
